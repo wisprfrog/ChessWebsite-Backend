@@ -1,7 +1,7 @@
-const express = require('express');
-const app = express();
+import express from 'express';
 
-const PORT = 3000;
+const app = express();
+const PORT: number = 3000;
 
 app.get('/', (req, res) => {
   res.send('Hola, este es un servidor Express básico');
