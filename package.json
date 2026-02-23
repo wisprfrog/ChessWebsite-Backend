@@ -1,20 +1,11 @@
 {
-  "dependencies": {
-    "@types/express": "^5.0.6",
-    "chess.js": "^1.4.0",
-    "express": "^5.2.1",
-    "tsx": "^4.21.0"
-  },
-  "type": "module",
   "name": "chesswebsite-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "start": "tsx src/index.ts",
-    "dev": "tsx src/index.ts"
+    "dev": "nodemon index.js"
   },
   "repository": {
     "type": "git",
@@ -27,9 +18,10 @@
     "url": "https://github.com/wisprfrog/ChessWebsite-Backend/issues"
   },
   "homepage": "https://github.com/wisprfrog/ChessWebsite-Backend#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  },
   "devDependencies": {
-    "@types/node": "^25.3.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "nodemon": "^3.1.14"
   }
 }
