@@ -3,19 +3,29 @@ import { Server as SocketServer } from 'socket.io';
 import app from './app.js';
 import serverSocket from './sockets/serverSocket.js'
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 const server = http.createServer(app);
 
 const io = new SocketServer(server, {
   cors: {
-    origin: 'http://192.168.0.2:3000'
+    origin: [
+      'http://192.168.0.2:3000',
+      'http://localhost:3000',
+
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true // Permitir el envío de cookies para la autenticación si es necesario 
+  },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 600,
+    skipMiddlewares: true
   }
 });
 
 
 serverSocket(io);
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log('Servidor corriendo en puerto', PORT);
 });
