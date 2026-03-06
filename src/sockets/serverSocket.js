@@ -13,30 +13,18 @@ export default function serverSocket(io) {
       const numClientes = clientesEnSala ? clientesEnSala.size : 0;
       let rol_asignado = '';
       
-      if(numClientes === 0){
-        socket.emit('asignar_rol', 'white');
-        rol_asignado = 'white';
-      }
+      if(numClientes === 0) rol_asignado = 'white';
       else if(numClientes === 1){
-        socket.emit('asignar_rol', 'black');
         rol_asignado = 'black';
         
         partidas_activas.set(salaId, new Partida(salaId));
-
-        // partidas_activas.forEach((partida, id) => {
-        //   console.log(`Partida en sala ${id} - Tiempo restante:`, {
-        //     blancas: partida.getTiempoRestanteBlancas(),
-        //     negras: partida.getTiempoRestanteNegras()
-        //   });
-        // });
       }
-      else{
-        socket.emit('asignar_rol', 'spectator');
-        rol_asignado = 'spectator';
-      }
+      else rol_asignado = 'spectator';
 
-      console.log(`Usuario ${socket.id} se unió a la sala ${salaId} como ${rol_asignado}`);
+      socket.to(salaId).emit('asignar_rol', rol_asignado);
+
       socket.join(salaId);
+      console.log(`Usuario ${socket.id} se unió a la sala ${salaId} como ${rol_asignado}`);
     });
 
     socket.on('movimiento', (data) => {
