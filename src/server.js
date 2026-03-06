@@ -9,7 +9,8 @@ const server = http.createServer(app);
 
 const io = new SocketServer(server, {
   cors: {
-    origin: 'http://192.168.0.2:3000'
+    // origin: 'http://192.168.0.2:3000'
+    origin: 'http://localhost:3000'
   }
 });
 
