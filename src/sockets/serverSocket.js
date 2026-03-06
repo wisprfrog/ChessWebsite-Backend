@@ -7,30 +7,32 @@ export default function serverSocket(io) {
     // console.log('a user connected to partida socket', socket.id);
   
     socket.on('unirse_sala', (salaId) => {
-      socket.leaveAll();
+      const room = io.sockets.adapter.rooms.get(salaId);
+      const numClientes = room ? room.size : 0;
 
-      const clientesEnSala = io.sockets.adapter.rooms.get(salaId);
-      const numClientes = clientesEnSala ? clientesEnSala.size : 0;
+      socket.join(salaId);
+
       let rol_asignado = '';
       
-      if(numClientes === 0) rol_asignado = 'white';
+      console.log(numClientes, 'clientes en sala', salaId);
+      if(numClientes === 0) {
+        rol_asignado = 'white';
+        socket.emit('asignar_rol', rol_asignado);
+      }
       else if(numClientes === 1){
         rol_asignado = 'black';
+        socket.emit('asignar_rol', rol_asignado);
         
         partidas_activas.set(salaId, new Partida(salaId));
       }
-      else rol_asignado = 'spectator';
-
-      socket.to(salaId).emit('asignar_rol', rol_asignado);
-
-      socket.join(salaId);
-      console.log(`Usuario ${socket.id} se unió a la sala ${salaId} como ${rol_asignado}`);
+      else{
+        rol_asignado = 'spectator';
+        socket.emit('asignar_rol', rol_asignado);
+      }
     });
 
     socket.on('movimiento', (data) => {
-      // console.log('Movimiento recibido:', data);
-
-      console.log('Movimiento recibido en sala', data.sala, ':', data.fenMovimiento);
+      // console.log('Movimiento recibido en sala', data.sala, ':', data.fenMovimiento);
 
       partidas_activas.get(data.sala)?.partida_chess_js.load(data.fenMovimiento);
       
@@ -45,9 +47,9 @@ export default function serverSocket(io) {
 
       socket.to(data.sala).emit('movimiento', data);
     });
+  });
 
-
-    setInterval(() => {
+  setInterval(() => {
       partidas_activas.forEach((partida, salaId) => {
         const resultado_partida = partida.partidaTerminada();
 
@@ -66,9 +68,8 @@ export default function serverSocket(io) {
           };
 
           // console.log(`Sala ${salaId} - Tiempo restante:`, tiempo_restante);
-          socket.to(salaId).emit('actualizar_tiempos', tiempo_restante);
+          io.to(salaId).emit('actualizar_tiempos', tiempo_restante);
         }
       });
     }, 1000);
-  });
 }
