@@ -6,6 +6,9 @@ export default class Partida {
     this.tiempo_restante_blancas = 600000;
     this.tiempo_restante_negras = 600000;
 
+    this.id_usuario_blancas = null;
+    this.id_usuario_negras = null;
+
     this.tiempo_refer_blancas = Date.now();
     this.tiempo_refer_negras = Date.now();
 
@@ -32,6 +35,22 @@ export default class Partida {
 
   getTiempoNuevoNegras(){
     return this.nuevo_tiempo_negras;
+  }
+
+  getIdUsuarioBlancas(){
+    return this.id_usuario_blancas;
+  }
+
+  getIdUsuarioNegras(){
+    return this.id_usuario_negras;
+  }
+
+  setIdUsuarioBlancas(id_usuario){
+    this.id_usuario_blancas = id_usuario;
+  }
+
+  setIdUsuarioNegras(id_usuario){
+    this.id_usuario_negras = id_usuario;
   }
 
   actualizarTiempoRestanteBlancas(){
