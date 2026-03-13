@@ -21,9 +21,12 @@
   },
   "homepage": "https://github.com/wisprfrog/ChessWebsite-Backend#readme",
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "chess.js": "^1.4.0",
     "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "socket.io": "^4.8.3"
   },
