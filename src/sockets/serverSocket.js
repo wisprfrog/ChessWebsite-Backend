@@ -2,9 +2,9 @@ import  Partida  from '../services/Partida.js';
 
 export default function serverSocket(io) {
   const partidas_activas = new Map();
+  var usuarios_desconectados = new Array();
 
   io.on('connect', (socket) => {
-    // console.log('a user connected to partida socket', socket.id);
     const id_usuario_conectado = socket.handshake.auth.id_usuario_actual;
     const sala_a_reconectar = buscarUsuarioEnPartida(id_usuario_conectado);
 
@@ -29,6 +29,7 @@ export default function serverSocket(io) {
         socket.emit('asignar_rol', rol_asignado);
         
         partidas_activas.get(sala)?.setIdUsuarioBlancas(id_usuario);
+        
       }
       else if(!id_negras||
         id_usuario === id_negras){
@@ -36,6 +37,10 @@ export default function serverSocket(io) {
 
         socket.emit('asignar_rol', rol_asignado);
         partidas_activas.get(sala)?.setIdUsuarioNegras(id_usuario);
+        if(!partidas_activas.get(sala)?.getTiempoReferBlancas() || !partidas_activas.get(sala)?.getTiempoReferNegras()){
+          partidas_activas.get(sala)?.setTiempoReferBlancas();
+          partidas_activas.get(sala)?.setTiempoReferNegras();
+        }
       }
       else{
         rol_asignado = 'spectator';
@@ -70,6 +75,22 @@ export default function serverSocket(io) {
       }
     });
 
+    socket.on('disconnect', () => {
+      const id_usuario_desconectado = socket.handshake.auth.id_usuario_actual;
+      const salaId = buscarUsuarioEnPartida(id_usuario_desconectado);
+      console.log(`Usuario ${id_usuario_desconectado} se ha desconectado del socket de partidas.`);
+
+      partidas_activas.forEach((partida, salaId) => {
+        const id_usuario_blancas = partida.getIdUsuarioBlancas();
+        const id_usuario_negras = partida.getIdUsuarioNegras();
+
+        if(id_usuario_blancas === id_usuario_desconectado || id_usuario_negras === id_usuario_desconectado){
+            usuarios_desconectados.push([salaId, id_usuario_desconectado]);
+        }
+      });
+
+    });
+
   });
 
   setInterval(() => {
@@ -86,13 +107,34 @@ export default function serverSocket(io) {
           negras: partida.getTiempoNuevoNegras()
         };
 
-        // console.log(`Sala ${salaId} - Tiempo restante:`, tiempo_restante);
         io.to(salaId).emit('actualizar_tiempos', tiempo_restante);
 
         const resultado_partida = partida.partidaTerminada();
         if(resultado_partida.causa_fin_partida){
-          console.log(`Partida en sala ${salaId} terminó por ${resultado_partida.causa_fin_partida}. Ganador: ${resultado_partida.ganador}`);
           io.to(salaId).emit('terminar_partida', resultado_partida);
+          terminarPartida(salaId);
+        }
+      });
+
+
+      usuarios_desconectados.forEach(([salaId, id_usuario]) => {
+        const partida = partidas_activas?.get(salaId);
+      
+        if(id_usuario === partida?.getIdUsuarioBlancas()){
+          const tiempo_blancas = partida?.getTiempoReconexionBlancas() - 1000;
+          partida?.setTiempoReconexionBlancas(tiempo_blancas);
+        }
+        else{
+          const tiempo_negras = partida?.getTiempoReconexionNegras() - 1000;
+          partida?.setTiempoReconexionNegras(tiempo_negras);
+        }
+        
+        const resultado_partida = partida?.partidaTerminada(); 
+        if(resultado_partida?.causa_fin_partida || resultado_partida?.ganador){
+          io.to(salaId).emit('terminar_partida', resultado_partida);
+
+          usuarios_desconectados = usuarios_desconectados.filter(([sala, id]) => !(sala === salaId && id === id_usuario));
+          
           terminarPartida(salaId);
         }
       });
@@ -113,7 +155,12 @@ export default function serverSocket(io) {
 
     function buscarUsuarioEnPartida(id_usuario){
         partidas_activas.forEach((partida, salaId) => {
-          if(partida.getIdUsuarioBlancas() === id_usuario || partida.getIdUsuarioNegras() === id_usuario){
+          const id_usuario_blancas = partida.getIdUsuarioBlancas();
+          const id_usuario_negras = partida.getIdUsuarioNegras();
+          if(id_usuario_blancas === id_usuario || id_usuario_negras === id_usuario){
+            if(id_usuario === id_usuario_blancas) partida.setTiempoReconexionBlancas(1 * 60000);
+            else partida.setTiempoReconexionNegras(1 * 60000);
+
             return salaId;
           }
         });

@@ -3,17 +3,19 @@ import { Chess } from 'chess.js'
 export default class Partida {
   constructor(id_sala) {
     this.id_sala = id_sala;
-    this.tiempo_restante_blancas = 0.2 * 60000;
-    this.tiempo_restante_negras = 0.2 * 60000;
+    this.tiempo_restante_blancas = 6 * 60000;
+    this.tiempo_restante_negras = 6 * 60000;
 
     this.id_usuario_blancas = null;
     this.id_usuario_negras = null;
 
-    this.tiempo_refer_blancas = Date.now();
-    this.tiempo_refer_negras = Date.now();
+    this.tiempo_refer_blancas = null;
+    this.tiempo_refer_negras = null;
 
-    this.nuevo_tiempo_blancas = 0.2 * 60000;
-    this.nuevo_tiempo_negras = 0.2 * 60000;
+    this.nuevo_tiempo_blancas = 6 * 60000;
+    this.nuevo_tiempo_negras = 6 * 60000;
+    this.tiempo_reconexion_blancas = 1 * 60000;
+    this.tiempo_reconexion_negras = 1 * 60000;
     this.partida_chess_js = new Chess();
   }
 
@@ -45,6 +47,22 @@ export default class Partida {
     return this.id_usuario_negras;
   }
 
+  getTiempoReconexionBlancas(){
+    return this.tiempo_reconexion_blancas;
+  }
+
+  getTiempoReconexionNegras(){
+    return this.tiempo_reconexion_negras;
+  }
+
+  setTiempoReconexionBlancas(tiempo){
+    this.tiempo_reconexion_blancas = tiempo;
+  }
+
+  setTiempoReconexionNegras(tiempo){
+    this.tiempo_reconexion_negras = tiempo;
+  }
+
   setIdUsuarioBlancas(id_usuario){
     this.id_usuario_blancas = id_usuario;
   }
@@ -67,6 +85,14 @@ export default class Partida {
 
   setTiempoReferNegras(){
     this.tiempo_refer_negras = Date.now();
+  }
+
+  getTiempoReferBlancas(){
+    return this.tiempo_refer_blancas;
+  }
+
+  getTiempoReferNegras(){
+    return this.tiempo_refer_negras;
   }
 
   calcularNuevoTiempoBlancas(){
@@ -98,6 +124,9 @@ export default class Partida {
     else if(this.getTiempoNuevoBlancas() <= 0 || this.getTiempoNuevoNegras() <= 0){
       causa_fin_partida = "Tiempo agotado";
       ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
+    }else if(this.getTiempoReconexionBlancas() <= 0 || this.getTiempoReconexionNegras() <= 0){
+      causa_fin_partida = "Desconexion";
+      ganador = 'Empate';
     }
 
     return { causa_fin_partida, ganador };
