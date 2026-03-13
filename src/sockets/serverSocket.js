@@ -63,7 +63,7 @@ export default function serverSocket(io) {
       socket.to(data.sala).emit('movimiento', data);
       if(partidas_activas.get(data.sala)?.partidaTerminada().causa_fin_partida){
         const resultado_partida = partidas_activas.get(data.sala)?.partidaTerminada();
-        io.to(data.sala).emit('partida_terminada', resultado_partida);
+        io.to(data.sala).emit('terminar_partida', resultado_partida);
         terminarPartida(data.sala);
       }
     });
@@ -90,7 +90,7 @@ export default function serverSocket(io) {
         const resultado_partida = partida.partidaTerminada();
         if(resultado_partida.causa_fin_partida){
           console.log(`Partida en sala ${salaId} terminó por ${resultado_partida.causa_fin_partida}. Ganador: ${resultado_partida.ganador}`);
-          io.to(salaId).emit('partida_terminada', resultado_partida);
+          io.to(salaId).emit('terminar_partida', resultado_partida);
           terminarPartida(salaId);
         }
       });
@@ -98,10 +98,11 @@ export default function serverSocket(io) {
 
     function terminarPartida(salaId){
       const partida = partidas_activas.get(salaId);
+      const movimientos = partida.getHistorial();
       console.log('ID Partida se autoincrementa en base de datos');
-      console.log('Usuario blancas ->');
-      console.log('Usuario negras ->');
-      console.log('Movimientos: ', partida.getHistorial())
+      console.log('Usuario blancas -> ', partida.getIdUsuarioBlancas());
+      console.log('Usuario negras ->', partida.getIdUsuarioNegras());
+      console.log('Movimientos: ', movimientos);
       console.log('Ganador:', partida.partidaTerminada().ganador);
       console.log('Causa:', partida.partidaTerminada().causa_fin_partida);
       console.log('Fecha de la partida: ', new Date().toLocaleDateString());

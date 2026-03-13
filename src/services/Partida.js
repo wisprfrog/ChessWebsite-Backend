@@ -3,8 +3,8 @@ import { Chess } from 'chess.js'
 export default class Partida {
   constructor(id_sala) {
     this.id_sala = id_sala;
-    this.tiempo_restante_blancas = 600000;
-    this.tiempo_restante_negras = 600000;
+    this.tiempo_restante_blancas = 0.2 * 60000;
+    this.tiempo_restante_negras = 0.2 * 60000;
 
     this.id_usuario_blancas = null;
     this.id_usuario_negras = null;
@@ -12,8 +12,8 @@ export default class Partida {
     this.tiempo_refer_blancas = Date.now();
     this.tiempo_refer_negras = Date.now();
 
-    this.nuevo_tiempo_blancas = 600000;
-    this.nuevo_tiempo_negras = 600000;
+    this.nuevo_tiempo_blancas = 0.2 * 60000;
+    this.nuevo_tiempo_negras = 0.2 * 60000;
     this.partida_chess_js = new Chess();
   }
 
@@ -77,6 +77,10 @@ export default class Partida {
     this.nuevo_tiempo_negras = this.tiempo_restante_negras - (Date.now() - this.tiempo_refer_negras);
   }
 
+  getHistorial(){
+    return this.partida_chess_js.history();
+  }
+
   partidaTerminada(){
     let causa_fin_partida = null;
     let ganador = null;
@@ -88,11 +92,12 @@ export default class Partida {
       if(this.partida_chess_js.isThreefoldRepetition()) causa_fin_partida = "Repetición de posición";
       if(this.partida_chess_js.isInsufficientMaterial()) causa_fin_partida = "Material insuficiente";
 
-      ganador = this.getTurno() == 'w' ? 'b' : 'w';
+      if(causa_fin_partida !== "Jaque Mate") ganador = "Empate";
+      else ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
     }
-    else if(this.getTiempoRestanteBlancas() <= 0 || this.getTiempoRestanteNegras() <= 0){
+    else if(this.getTiempoNuevoBlancas() <= 0 || this.getTiempoNuevoNegras() <= 0){
       causa_fin_partida = "Tiempo agotado";
-      ganador = this.getTurno() == 'w' ? 'b' : 'w';
+      ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
     }
 
     return { causa_fin_partida, ganador };
