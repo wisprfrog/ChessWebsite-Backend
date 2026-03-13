@@ -47,22 +47,24 @@ export default function serverSocket(io) {
     });
 
     socket.on('movimiento', (data) => {
-      // console.log('Movimiento recibido en sala', data.sala, ':', data.fenMovimiento);
+      const partida_actual = partidas_activas.get(data.sala);
 
-      partidas_activas.get(data.sala)?.partida_chess_js.load(data.fenMovimiento);
+      partida_actual.partida_chess_js.move(data.estructura_movimiento);
       
-      if(partidas_activas.get(data.sala)?.getTurno() === 'w'){
-        partidas_activas.get(data.sala)?.actualizarTiempoRestanteNegras(); //el turno anterior fue negro
-        partidas_activas.get(data.sala)?.setTiempoReferBlancas(); //el actual es blanco
+      if(partida_actual.getTurno() === 'w'){
+        partida_actual.actualizarTiempoRestanteNegras(); //el turno anterior fue negro
+        partida_actual.setTiempoReferBlancas(); //el actual es blanco
       }
       else{
-        partidas_activas.get(data.sala)?.actualizarTiempoRestanteBlancas();
-        partidas_activas.get(data.sala)?.setTiempoReferNegras();
+        partida_actual.actualizarTiempoRestanteBlancas();
+        partida_actual.setTiempoReferNegras();
       }
 
-      socket.to(data.sala).emit('movimiento', data);
-      if(partidas_activas.get(data.sala)?.partidaTerminada().causa_fin_partida){
-        const resultado_partida = partidas_activas.get(data.sala)?.partidaTerminada();
+      const fenMovimiento = partida_actual.partida_chess_js.fen();
+
+      socket.to(data.sala).emit('movimiento', fenMovimiento);
+      if(partida_actual.partidaTerminada().causa_fin_partida){
+        const resultado_partida = partida_actual.partidaTerminada();
         io.to(data.sala).emit('terminar_partida', resultado_partida);
         terminarPartida(data.sala);
       }
