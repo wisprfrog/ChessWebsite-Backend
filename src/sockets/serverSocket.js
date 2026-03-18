@@ -54,7 +54,7 @@ export default function serverSocket(io) {
     socket.on('movimiento', (data) => {
       const partida_actual = partidas_activas.get(data.sala);
 
-      partida_actual.partida_chess_js.move(data.estructura_movimiento);
+      partida_actual.partida_chess_js?.move(data.estructura_movimiento);
       
       if(partida_actual.getTurno() === 'w'){
         partida_actual.actualizarTiempoRestanteNegras(); //el turno anterior fue negro
@@ -65,7 +65,7 @@ export default function serverSocket(io) {
         partida_actual.setTiempoReferNegras();
       }
 
-      const fenMovimiento = partida_actual.partida_chess_js.fen();
+      const fenMovimiento = partida_actual.partida_chess_js?.fen();
 
       socket.to(data.sala).emit('movimiento', fenMovimiento);
       if(partida_actual.partidaTerminada().causa_fin_partida){
