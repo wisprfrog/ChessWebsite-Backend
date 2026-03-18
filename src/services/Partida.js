@@ -3,8 +3,8 @@ import { Chess } from 'chess.js'
 export default class Partida {
   constructor(id_sala) {
     this.id_sala = id_sala;
-    this.tiempo_restante_blancas = 6 * 60000;
-    this.tiempo_restante_negras = 6 * 60000;
+    this.tiempo_restante_blancas = 10 * 60000;
+    this.tiempo_restante_negras = 10 * 60000;
 
     this.id_usuario_blancas = null;
     this.id_usuario_negras = null;
@@ -12,10 +12,10 @@ export default class Partida {
     this.tiempo_refer_blancas = null;
     this.tiempo_refer_negras = null;
 
-    this.nuevo_tiempo_blancas = 6 * 60000;
-    this.nuevo_tiempo_negras = 6 * 60000;
-    this.tiempo_reconexion_blancas = 1 * 60000;
-    this.tiempo_reconexion_negras = 1 * 60000;
+    this.nuevo_tiempo_blancas = 10 * 60000;
+    this.nuevo_tiempo_negras = 10 * 60000;
+    this.tiempo_reconexion_blancas = 2 * 60000;
+    this.tiempo_reconexion_negras = 2 * 60000;
     this.partida_chess_js = new Chess();
   }
 

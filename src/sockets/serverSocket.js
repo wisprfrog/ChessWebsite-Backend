@@ -158,8 +158,8 @@ export default function serverSocket(io) {
           const id_usuario_blancas = partida.getIdUsuarioBlancas();
           const id_usuario_negras = partida.getIdUsuarioNegras();
           if(id_usuario_blancas === id_usuario || id_usuario_negras === id_usuario){
-            if(id_usuario === id_usuario_blancas) partida.setTiempoReconexionBlancas(1 * 60000);
-            else partida.setTiempoReconexionNegras(1 * 60000);
+            if(id_usuario === id_usuario_blancas) partida.setTiempoReconexionBlancas(2 * 60000);
+            else partida.setTiempoReconexionNegras(2 * 60000);
 
             return salaId;
           }
