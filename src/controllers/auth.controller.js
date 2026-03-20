@@ -12,13 +12,13 @@ export const login = async (req, res) => {
     const resultado = await usuarioModel.selectDatosUsuario(nombre_usuario, correo);
     
     const usuario = resultado.rows[0];
-
+    
     if (!usuario) return res.status(401).json({ message: 'Usuario no encontrado' });
-
+    
     // Verificar la contraseña
     const isPasswordValid = await bcrypt.compare(contrasenia, usuario.contrasenia);
     if (!isPasswordValid) return res.status(401).json({ message: 'Credenciales invalidas' });
-
+    
     // Generar un token JWT
     const token = jwt.sign({
       id: usuario.id,
@@ -26,7 +26,7 @@ export const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '31d' }
     );
-
+    
     // Retornar el token al cliente
     res.status(200).json({
       mensaje: 'Inicio de sesión exitoso',
