@@ -9,15 +9,14 @@ export const login = async (req, res) => {
 
   try{
     // Verificar si el usuario existe en la base de datos
-    const resultado = await usuarioModel.selectInfoUsuario(nombre_usuario, correo);
+    const resultado = await usuarioModel.selectDatosUsuario(nombre_usuario, correo);
     
     const usuario = resultado.rows[0];
 
     if (!usuario) return res.status(401).json({ message: 'Usuario no encontrado' });
 
     // Verificar la contraseña
-    // const isPasswordValid = await bcrypt.compare(contrasenia, usuario.contrasenia);
-    const isPasswordValid = contrasenia === usuario.contrasenia;
+    const isPasswordValid = await bcrypt.compare(contrasenia, usuario.contrasenia);
     if (!isPasswordValid) return res.status(401).json({ message: 'Credenciales invalidas' });
 
     // Generar un token JWT
