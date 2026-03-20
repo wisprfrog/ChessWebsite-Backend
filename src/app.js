@@ -1,12 +1,14 @@
 // src/app.js
 
 import express from 'express';
-import pruebaQueryRouter from './routes/prueba_query.route.js';
+import usuarioRouter from './routes/usuario.routes.js';
+import amigosRouter from './routes/amigo.routes.js';
 
 const app = express();
 
 app.use(express.json());
-app.use('/api/prueba-query', pruebaQueryRouter);
+app.use('/api/usuario', usuarioRouter);
+app.use('/api/amigo', amigosRouter);
 
 app.get('/', (req, res) => {
     res.send("Servidor de ajedrez funcionando");
