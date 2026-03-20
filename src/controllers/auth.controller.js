@@ -21,8 +21,9 @@ export const login = async (req, res) => {
     
     // Generar un token JWT
     const token = jwt.sign({
-      id: usuario.id,
-      nombre_usuario: usuario.nombre_usuario},
+      id_usuario: usuario.id_usuario,
+      nombre_usuario: usuario.nombre_usuario,
+      correo: usuario.correo},
       process.env.JWT_SECRET,
       { expiresIn: '31d' }
     );
@@ -30,7 +31,12 @@ export const login = async (req, res) => {
     // Retornar el token al cliente
     res.status(200).json({
       mensaje: 'Inicio de sesión exitoso',
-      token: token
+      token: token,
+      datos_usuario: {
+        id_usuario: usuario.id_usuario,
+        nombre_usuario: usuario.nombre_usuario,
+        correo: usuario.correo
+      }
     }
   );
   }

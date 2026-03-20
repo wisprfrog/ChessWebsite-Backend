@@ -27,6 +27,17 @@ const partidaModel = {
         );
 
         return resultado;
+    },
+
+    deletePartidasSQL : async(id_usuario) => {
+        try{
+            const resultado = await turso.execute(
+                `DELETE FROM partida WHERE id_usuario_blancas = '${id_usuario}' OR id_usuario_negras = '${id_usuario}'`
+            );
+            return resultado;
+        }catch(error){
+            throw new Error('Error al eliminar partidas: ' + error.message);
+        }
     }
 
 };

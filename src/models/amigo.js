@@ -24,7 +24,8 @@ const amigosModel = {
   deleteAmigo : async(id_usuario, id_amigo) => {
       try{
           const resultado = await turso.execute(
-              `DELETE FROM amigo WHERE id_usuario = '${id_usuario}' AND id_amigo = '${id_amigo}'`
+              `DELETE FROM amigo WHERE (id_usuario = '${id_usuario}' AND id_amigo = '${id_amigo}') 
+               OR (id_usuario = '${id_amigo}' AND id_amigo = '${id_usuario}')`
           );
 
           return resultado;

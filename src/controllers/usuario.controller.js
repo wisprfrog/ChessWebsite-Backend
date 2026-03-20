@@ -1,9 +1,18 @@
 import byscrypt from 'bcrypt';
 import usuarioModel from '../models/usuario.js';
+import jwt from 'jsonwebtoken';
 
 export const getDatosUsuario = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  const decodedToken = jwt.decode(token);
+
+  const correo_token = decodedToken.correo;
+  
   const { nombre_usuario, correo } = req.body;
   
+  if(correo_token !== correo) return res.status(403).json({ message: 'No autorizado para acceder a esta información' });
+
  try{
     const resultado = await usuarioModel.selectDatosUsuario(nombre_usuario, correo);
     res.status(200).json({ message: 'Informacion usuario', informacion: resultado.rows });
@@ -77,9 +86,20 @@ export const postUsuario = async (req, res) => {
 }
 
 export const putNombreUsuario = async (req, res) => {
-  const { nombre_usuario, correo, nuevo_nombre_usuario } = req.body;
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  const decodedToken = jwt.decode(token);
+  const correo_token = decodedToken.correo;
 
-  if(!nombre_usuario || !correo || !nuevo_nombre_usuario) return res.status(400).json({ message: 'Faltan datos requeridos' });
+  const { nombre_usuario, correo, nuevo_nombre_usuario } = req.body;
+  
+  if(!nombre_usuario || !correo || !nuevo_nombre_usuario){
+    return res.status(400).json({ message: 'Faltan datos requeridos' });
+  }
+  
+  if(correo_token !== correo){
+    return res.status(403).json({ message: 'No autorizado para cambiar el nombre de usuario' });
+  }
 
   const resultadoCorreo = await usuarioModel.selectCorreoUsuario(nombre_usuario);
 
@@ -97,9 +117,20 @@ export const putNombreUsuario = async (req, res) => {
 }
 
 export const putContraseniaUsuario = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  const decodedToken = jwt.decode(token);
+  const correo_token = decodedToken.correo;
+
   const { correo, contrasenia, nueva_contrasenia } = req.body;
 
-  if( !correo || !contrasenia || !nueva_contrasenia) return res.status(400).json({ message: 'Faltan datos requeridos' });
+  if( !correo || !contrasenia || !nueva_contrasenia){
+    return res.status(400).json({ message: 'Faltan datos requeridos' });
+  }
+
+  if(correo_token !== correo){
+    return res.status(403).json({ message: 'No autorizado para cambiar la contraseña' });
+  }
 
   const resultadoCorreo = await usuarioModel.selectCorreoUsuario(null, null, correo);
   const resultadoContrasenia = await usuarioModel.selectContraseniaUsuario(null, null, correo);
@@ -124,6 +155,10 @@ export const putContraseniaUsuario = async (req, res) => {
 }
 
 export const deleteUsuario = async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  const decodedToken = jwt.decode(token);
+
   const { id_usuario, nombre_usuario, correo, contrasenia } = req.body;
 
   if((!id_usuario && !nombre_usuario && !correo) || !contrasenia){
@@ -134,14 +169,34 @@ export const deleteUsuario = async (req, res) => {
     let resultadoCorreo;
     let resultadoContrasenia;
     if(id_usuario){
+      const id_usuario_token = decodedToken.id_usuario;
+
+      console.log('ID del token:', id_usuario_token);
+      console.log('ID del cuerpo:', id_usuario);
+      if(id_usuario_token !== id_usuario){
+        return res.status(403).json({ message: 'No autorizado para eliminar el usuario' });
+      }
+
       resultadoCorreo = await usuarioModel.selectCorreoUsuario(null, id_usuario, null);
       resultadoContrasenia = await usuarioModel.selectContraseniaUsuario(null, id_usuario, null);
     }
     else if(nombre_usuario){
+      const nombre_usuario_token = decodedToken.nombre_usuario;
+
+      if(nombre_usuario_token !== nombre_usuario){
+        return res.status(403).json({ message: 'No autorizado para eliminar el usuario' });
+      }
+
       resultadoCorreo = await usuarioModel.selectCorreoUsuario(nombre_usuario, null, null);
       resultadoContrasenia = await usuarioModel.selectContraseniaUsuario(nombre_usuario, null, null);
     }
     else if (correo){
+      const correo_token = decodedToken.correo;
+
+      if(correo_token !== correo){
+        return res.status(403).json({ message: 'No autorizado para eliminar el usuario' });
+      }
+
       resultadoCorreo = await usuarioModel.selectCorreoUsuario(null, null, correo);
       resultadoContrasenia = await usuarioModel.selectContraseniaUsuario(null, null, correo);
     }

@@ -1,5 +1,6 @@
 import estadisticaModel from "../models/estadistica.js";
 import usuarioModel from "../models/usuario.js";
+import jwt from 'jsonwebtoken';
 
 export const getEstadistica = async (req, res) => {
     const { id_usuario } = req.body;
@@ -71,9 +72,20 @@ export const putEstadisticaTablas = async (req, res) => {
 }
 
 export const deleteEstadistica = async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    const decodedToken = jwt.decode(token);
+    const id_usuario_token = decodedToken.id_usuario;
+
     const { id_usuario } = req.body;
 
-    if (!id_usuario) return res.status(400).json({ message: 'Faltan datos requeridos' });
+    if (!id_usuario){
+        return res.status(400).json({ message: 'Faltan datos requeridos' });
+    }
+
+    if(id_usuario !== id_usuario_token){
+        return res.status(403).json({ message: 'No tienes permiso para eliminar esta estadistica' });
+    }
 
     try {
         const resultado = await estadisticaModel.deleteEstadisticaSQL(id_usuario);
