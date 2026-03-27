@@ -1,11 +1,13 @@
 import { Router } from 'express';
-import { login } from '../controllers/auth.controller.js';
-import verificarToken from '../middlewares/verificarToken.js';
-import agregarInfoLogin from '../middlewares/agregarInfoLogin.js';
+import { generarToken } from '../controllers/token.controller.js';
+
 import { getDatosUsuario, getNombreUsuarios, getIdUsuarios  } from '../controllers/usuario.controller.js';
 import { getIdUsuario, getCorreoUsuario, postUsuario } from '../controllers/usuario.controller.js';
 import { putNombreUsuario, putContraseniaUsuario } from '../controllers/usuario.controller.js';
-import { deleteUsuario } from '../controllers/usuario.controller.js';
+import { deleteUsuario, aceptarLogin } from '../controllers/usuario.controller.js';
+
+import verificarToken from '../middlewares/verificarToken.js';
+import agregarInfoLogin from '../middlewares/agregarInfoLogin.js';
 
 const usuarioRouter = Router();
 
@@ -17,7 +19,8 @@ usuarioRouter.get('/id_usuario', getIdUsuario);
 usuarioRouter.get('/id_usuario/correo', getCorreoUsuario);
 
 // Ruta PUBLICA para hacer login
-usuarioRouter.post('/login', agregarInfoLogin, login);
+usuarioRouter.post('/login/token', agregarInfoLogin, generarToken); //genera token
+usuarioRouter.post('/login', verificarToken, aceptarLogin); //verifica credenciales sin generar token
 usuarioRouter.post('/', postUsuario);
 
 // Ruta PRIVADA para cambiar información

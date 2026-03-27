@@ -213,3 +213,7 @@ export const deleteUsuario = async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor', error });
   }
 }
+
+export const aceptarLogin = async (req, res) => {
+  res.status(200).json({ message: 'Inicio de sesión exitoso' });
+} 

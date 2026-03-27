@@ -8,13 +8,8 @@ const verficarToken = (req, res, next) => {
 
   try{
     // Verificar que el token es válido
-    const decodificar = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Guardamos la información del usuario en la solicitud para usarla en el controlador
-    req.usuario = decodificar;
-
-    // Continuamos con la siguiente función middleware o controlador
-    next();
+    if(jwt.verify(token, process.env.JWT_SECRET)) next();
+    else throw new Error('Token no válido');
   }
   catch(error){
     res.status(401).json({ message: 'Token no válido o expirado', error });
