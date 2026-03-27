@@ -9,12 +9,18 @@ const agregarInfoLogin = async (req, res, next) => {
 
   try {
     if(nombre_usuario){
-      const resultado = await usuarioModel.selectIdUsuario(nombre_usuario, null);
-      req.body.id_usuario = resultado.rows[0].id_usuario;
+      const id_resultado = await usuarioModel.selectIdUsuario(nombre_usuario, null);
+      req.body.id_usuario = id_resultado.rows[0].id_usuario;
+
+      const correo_resultado = await usuarioModel.selectCorreoUsuario(null, id_resultado.rows[0].id_usuario, null);
+      req.body.correo = correo_resultado.rows[0].correo;
     }
     else if(correo){
-      const resultado = await usuarioModel.selectIdUsuario(null, correo);
-      req.body.id_usuario = resultado.rows[0].id_usuario;
+      const id_resultado = await usuarioModel.selectIdUsuario(null, correo);
+      req.body.id_usuario = id_resultado.rows[0].id_usuario;
+
+      const nombre_resultado = await usuarioModel.selectNombreUsuario(id_resultado.rows[0].id_usuario, null);
+      req.body.nombre_usuario = nombre_resultado.rows[0].nombre_usuario;
     }
     
     return next();

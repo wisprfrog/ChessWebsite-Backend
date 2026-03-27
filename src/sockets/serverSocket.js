@@ -5,12 +5,12 @@ export default function serverSocket(io) {
   var usuarios_desconectados = new Array();
 
   io.on('connect', (socket) => {
-    const id_usuario_conectado = socket.handshake.auth.id_usuario_actual;
-    const sala_a_reconectar = buscarUsuarioEnPartida(id_usuario_conectado);
+    const nombre_usuario_conectado = socket.handshake.auth.nombre_usuario_actual;
+    const sala_a_reconectar = buscarUsuarioEnPartida(nombre_usuario_conectado);
 
-    socket.emit('intentar_reconexion', ({sala_a_reconectar, id_usuario_conectado }));
+    socket.emit('intentar_reconexion', ({sala_a_reconectar, nombre_usuario_conectado }));
   
-    socket.on('unirse_sala', ({sala, id_usuario}) => {
+    socket.on('unirse_sala', ({sala, nombre_usuario}) => {
 
       socket.join(sala);
 
@@ -20,23 +20,22 @@ export default function serverSocket(io) {
 
       let rol_asignado = '';
 
-      const id_blancas = partidas_activas.get(sala)?.getIdUsuarioBlancas();
-      const id_negras = partidas_activas.get(sala)?.getIdUsuarioNegras();
+      const nombre_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
+      const nombre_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
       
-      if(!id_blancas || 
-        id_usuario === id_blancas){
+      if(!nombre_blancas || 
+        nombre_usuario === nombre_blancas){
         rol_asignado = 'white';
         socket.emit('asignar_rol', rol_asignado);
         
-        partidas_activas.get(sala)?.setIdUsuarioBlancas(id_usuario);
-        
+        partidas_activas.get(sala)?.setNombreUsuarioBlancas(nombre_usuario);
       }
-      else if(!id_negras||
-        id_usuario === id_negras){
+      else if(!nombre_negras||
+        nombre_usuario === nombre_negras){
         rol_asignado = 'black';
 
         socket.emit('asignar_rol', rol_asignado);
-        partidas_activas.get(sala)?.setIdUsuarioNegras(id_usuario);
+        partidas_activas.get(sala)?.setNombreUsuarioNegras(nombre_usuario);
         if(!partidas_activas.get(sala)?.getTiempoReferBlancas() || !partidas_activas.get(sala)?.getTiempoReferNegras()){
           partidas_activas.get(sala)?.setTiempoReferBlancas();
           partidas_activas.get(sala)?.setTiempoReferNegras();
@@ -46,6 +45,8 @@ export default function serverSocket(io) {
         rol_asignado = 'spectator';
         socket.emit('asignar_rol', rol_asignado);
       }
+
+      console.log(`Usuario ${nombre_usuario} se ha unido a la sala ${sala} con el rol de ${rol_asignado}.`);
 
       const fenPartida = partidas_activas.get(sala)?.partida_chess_js.fen();
       socket.emit('cargar_juego', (fenPartida));
@@ -76,16 +77,15 @@ export default function serverSocket(io) {
     });
 
     socket.on('disconnect', () => {
-      const id_usuario_desconectado = socket.handshake.auth.id_usuario_actual;
-      const salaId = buscarUsuarioEnPartida(id_usuario_desconectado);
-      console.log(`Usuario ${id_usuario_desconectado} se ha desconectado del socket de partidas.`);
-
+      const nombre_usuario_desconectado = socket.handshake.auth.nombre_usuario_actual;
+      
       partidas_activas.forEach((partida, salaId) => {
-        const id_usuario_blancas = partida.getIdUsuarioBlancas();
-        const id_usuario_negras = partida.getIdUsuarioNegras();
-
-        if(id_usuario_blancas === id_usuario_desconectado || id_usuario_negras === id_usuario_desconectado){
-            usuarios_desconectados.push([salaId, id_usuario_desconectado]);
+        const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
+        const nombre_usuario_negras = partida.getNombreUsuarioNegras();
+        
+        if(nombre_usuario_blancas === nombre_usuario_desconectado || nombre_usuario_negras === nombre_usuario_desconectado){
+          usuarios_desconectados.push([salaId, nombre_usuario_desconectado]);
+          console.log(`Usuario ${nombre_usuario_desconectado} se ha desconectado del socket de partida ID ${salaId}.`);
         }
       });
 
@@ -96,11 +96,11 @@ export default function serverSocket(io) {
   setInterval(() => {
       partidas_activas.forEach((partida, salaId) => {
         let turno_actual = partida.getTurno();
-        let id_usuario_blancas = partida.getIdUsuarioBlancas();
-        let id_usuario_negras = partida.getIdUsuarioNegras();
+        let nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
+        let nombre_usuario_negras = partida.getNombreUsuarioNegras();
 
-        if(turno_actual === 'w' && id_usuario_blancas && id_usuario_negras) partida.calcularNuevoTiempoBlancas();
-        else if (turno_actual === 'b' && id_usuario_blancas && id_usuario_negras) partida.calcularNuevoTiempoNegras();
+        if(turno_actual === 'w' && nombre_usuario_blancas && nombre_usuario_negras) partida.calcularNuevoTiempoBlancas();
+        else if (turno_actual === 'b' && nombre_usuario_blancas && nombre_usuario_negras) partida.calcularNuevoTiempoNegras();
 
         let tiempo_restante = {
           blancas: partida.getTiempoNuevoBlancas(),            
@@ -117,10 +117,10 @@ export default function serverSocket(io) {
       });
 
 
-      usuarios_desconectados.forEach(([salaId, id_usuario]) => {
+      usuarios_desconectados.forEach(([salaId, nombre_usuario]) => {
         const partida = partidas_activas?.get(salaId);
       
-        if(id_usuario === partida?.getIdUsuarioBlancas()){
+        if(nombre_usuario === partida?.getNombreUsuarioBlancas()){
           const tiempo_blancas = partida?.getTiempoReconexionBlancas() - 1000;
           partida?.setTiempoReconexionBlancas(tiempo_blancas);
         }
@@ -133,7 +133,7 @@ export default function serverSocket(io) {
         if(resultado_partida?.causa_fin_partida || resultado_partida?.ganador){
           io.to(salaId).emit('terminar_partida', resultado_partida);
 
-          usuarios_desconectados = usuarios_desconectados.filter(([sala, id]) => !(sala === salaId && id === id_usuario));
+          usuarios_desconectados = usuarios_desconectados.filter(([sala, nombre]) => !(sala === salaId && nombre === nombre_usuario));
           
           terminarPartida(salaId);
         }
@@ -144,8 +144,8 @@ export default function serverSocket(io) {
       const partida = partidas_activas.get(salaId);
       const movimientos = partida.getHistorial();
       console.log('ID Partida se autoincrementa en base de datos');
-      console.log('Usuario blancas -> ', partida.getIdUsuarioBlancas());
-      console.log('Usuario negras ->', partida.getIdUsuarioNegras());
+      console.log('Usuario blancas -> ', partida.getNombreUsuarioBlancas());
+      console.log('Usuario negras ->', partida.getNombreUsuarioNegras());
       console.log('Movimientos: ', movimientos);
       console.log('Ganador:', partida.partidaTerminada().ganador);
       console.log('Causa:', partida.partidaTerminada().causa_fin_partida);
@@ -153,12 +153,12 @@ export default function serverSocket(io) {
       partidas_activas.delete(salaId);
     };
 
-    function buscarUsuarioEnPartida(id_usuario){
+    function buscarUsuarioEnPartida(nombre_usuario){
         partidas_activas.forEach((partida, salaId) => {
-          const id_usuario_blancas = partida.getIdUsuarioBlancas();
-          const id_usuario_negras = partida.getIdUsuarioNegras();
-          if(id_usuario_blancas === id_usuario || id_usuario_negras === id_usuario){
-            if(id_usuario === id_usuario_blancas) partida.setTiempoReconexionBlancas(2 * 60000);
+          const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
+          const nombre_usuario_negras = partida.getNombreUsuarioNegras();
+          if(nombre_usuario_blancas === nombre_usuario || nombre_usuario_negras === nombre_usuario){
+            if(nombre_usuario === nombre_usuario_blancas) partida.setTiempoReconexionBlancas(2 * 60000);
             else partida.setTiempoReconexionNegras(2 * 60000);
 
             return salaId;
