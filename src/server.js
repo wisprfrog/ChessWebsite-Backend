@@ -18,7 +18,7 @@ const io = new SocketServer(server, {
     credentials: true // Permitir el envío de cookies para la autenticación si es necesario 
   },
   connectionStateRecovery: {
-    maxDisconnectionDuration: 600,
+    maxDisconnectionDuration: 2 * 60000, // 2 minutos
     skipMiddlewares: true
   }
 });
