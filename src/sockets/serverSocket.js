@@ -49,7 +49,9 @@ export default function serverSocket(io) {
       console.log(`Usuario ${nombre_usuario} se ha unido a la sala ${sala} con el rol de ${rol_asignado}.`);
 
       const fenPartida = partidas_activas.get(sala)?.partida_chess_js.fen();
-      socket.emit('cargar_juego', (fenPartida));
+      const nombre_usuario_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
+      const nombre_usuario_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
+      io.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras}));
     });
 
     socket.on('movimiento', (data) => {
