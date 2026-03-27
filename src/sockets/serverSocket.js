@@ -3,6 +3,8 @@ import  Partida  from '../services/Partida.js';
 export default function serverSocket(io) {
   const partidas_activas = new Map();
   var usuarios_desconectados = new Array();
+  let cola_jugadores = new Set();
+  var sala = 0;
 
   io.on('connect', (socket) => {
     const nombre_usuario_conectado = socket.handshake.auth.nombre_usuario_actual;
@@ -10,35 +12,60 @@ export default function serverSocket(io) {
 
     socket.emit('intentar_reconexion', ({sala_a_reconectar, nombre_usuario_conectado }));
   
-    socket.on('unirse_sala', ({sala, nombre_usuario}) => {
+    socket.on('buscar_partida', (nombre_usuario) => {
+      cola_jugadores.add(nombre_usuario); 
 
-      socket.join(sala);
+      if(cola_jugadores.size >= 2){
+        const jugador1 = cola_jugadores.entries().next().value;
+        cola_jugadores.delete(jugador1[0]);
+        const jugador2 = cola_jugadores.entries().next().value;
+        cola_jugadores.delete(jugador2[0]);
+        
+        const nom_usuario1 = jugador1[0].nombre_usuario;
+        const nom_usuario2 = jugador2[0].nombre_usuario;
 
-      if(!partidas_activas.has(sala)){
-        partidas_activas.set(sala, new Partida(sala));
+        console.log(`Partida encontrada entre ${nom_usuario1} y ${nom_usuario2} en la sala ${sala}.`);
+        console.log("jugador 1 mi perro", nom_usuario1);
+        console.log("jugador 2 mi perro", nom_usuario2);
+        io.emit('partida_encontrada', {
+          sala_asignada: sala.toString(),
+          nombre_usuario1: nom_usuario1,
+          nombre_usuario2: nom_usuario2
+        });
+
+        sala++;
+      }
+    })
+
+    socket.on('unirse_sala', ({sala_asignada, nombre_usuario}) => {
+      console.log(`Usuario ${nombre_usuario} se está uniendo a la sala ${sala_asignada}.`);
+      socket.join(sala_asignada);
+
+      if(!partidas_activas.has(sala_asignada)){
+        partidas_activas.set(sala_asignada, new Partida(sala_asignada));
       }
 
       let rol_asignado = '';
 
-      const nombre_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
-      const nombre_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
+      const nombre_blancas = partidas_activas.get(sala_asignada)?.getNombreUsuarioBlancas();
+      const nombre_negras = partidas_activas.get(sala_asignada)?.getNombreUsuarioNegras();
       
       if(!nombre_blancas || 
         nombre_usuario === nombre_blancas){
         rol_asignado = 'white';
         socket.emit('asignar_rol', rol_asignado);
         
-        partidas_activas.get(sala)?.setNombreUsuarioBlancas(nombre_usuario);
+        partidas_activas.get(sala_asignada)?.setNombreUsuarioBlancas(nombre_usuario);
       }
       else if(!nombre_negras||
         nombre_usuario === nombre_negras){
         rol_asignado = 'black';
 
         socket.emit('asignar_rol', rol_asignado);
-        partidas_activas.get(sala)?.setNombreUsuarioNegras(nombre_usuario);
-        if(!partidas_activas.get(sala)?.getTiempoReferBlancas() || !partidas_activas.get(sala)?.getTiempoReferNegras()){
-          partidas_activas.get(sala)?.setTiempoReferBlancas();
-          partidas_activas.get(sala)?.setTiempoReferNegras();
+        partidas_activas.get(sala_asignada)?.setNombreUsuarioNegras(nombre_usuario);
+        if(!partidas_activas.get(sala_asignada)?.getTiempoReferBlancas() || !partidas_activas.get(sala_asignada)?.getTiempoReferNegras()){
+          partidas_activas.get(sala_asignada)?.setTiempoReferBlancas();
+          partidas_activas.get(sala_asignada)?.setTiempoReferNegras();
         }
       }
       else{
@@ -46,12 +73,12 @@ export default function serverSocket(io) {
         socket.emit('asignar_rol', rol_asignado);
       }
 
-      console.log(`Usuario ${nombre_usuario} se ha unido a la sala ${sala} con el rol de ${rol_asignado}.`);
+      console.log(`Usuario ${nombre_usuario} se ha unido a la sala ${sala_asignada} con el rol de ${rol_asignado}.`);
 
-      const fenPartida = partidas_activas.get(sala)?.partida_chess_js.fen();
-      const nombre_usuario_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
-      const nombre_usuario_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
-      io.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras}));
+      const fenPartida = partidas_activas.get(sala_asignada)?.partida_chess_js.fen();
+      const nombre_usuario_blancas = partidas_activas.get(sala_asignada)?.getNombreUsuarioBlancas();
+      const nombre_usuario_negras = partidas_activas.get(sala_asignada)?.getNombreUsuarioNegras();
+      io.to(sala_asignada).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras}));
     });
 
     socket.on('movimiento', (data) => {
