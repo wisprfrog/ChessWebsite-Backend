@@ -118,15 +118,15 @@ export default class Partida {
       if(this.partida_chess_js.isThreefoldRepetition()) causa_fin_partida = "Repetición de posición";
       if(this.partida_chess_js.isInsufficientMaterial()) causa_fin_partida = "Material insuficiente";
 
-      if(causa_fin_partida !== "Jaque Mate") ganador = "Empate";
-      else ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
+      if(causa_fin_partida !== "Jaque mate") ganador = null;
+      else ganador = this.getTurno() == 'w' ? this.nombre_usuario_negras : this.nombre_usuario_blancas;
     }
     else if(this.getTiempoNuevoBlancas() <= 0 || this.getTiempoNuevoNegras() <= 0){
       causa_fin_partida = "Tiempo agotado";
-      ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
+      ganador = this.getTurno() == 'w' ? this.nombre_usuario_negras : this.nombre_usuario_blancas;
     }else if(this.getTiempoReconexionBlancas() <= 0 || this.getTiempoReconexionNegras() <= 0){
       causa_fin_partida = "Desconexion";
-      ganador = 'Empate';
+      ganador = null;
     }
 
     return { causa_fin_partida, ganador };

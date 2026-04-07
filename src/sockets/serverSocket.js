@@ -1,4 +1,6 @@
 import  Partida  from '../services/Partida.js';
+import partidaModel from '../models/partida.js';
+import usuarioModel from '../models/usuario.js';
 
 export default function serverSocket(io) {
   const partidas_activas = new Map();
@@ -184,16 +186,58 @@ export default function serverSocket(io) {
       });
     }, 1000);
 
-    function terminarPartida(salaId){
+    async function terminarPartida(salaId){
       const partida = partidas_activas.get(salaId);
+      
+      //DATOS A GUARDAR EN LA BASE DE DATOS
+      //Preparando id usuarios
+      const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
+      const nombre_usuario_negras = partida.getNombreUsuarioNegras();
+      
+      const resultado_blancas = await usuarioModel.selectIdUsuario(nombre_usuario_blancas, null);
+      const resultado_negras = await usuarioModel.selectIdUsuario(nombre_usuario_negras, null);
+
+      const id_usuario_blancas = resultado_blancas.rows[0]?.id_usuario;
+      const id_usuario_negras = resultado_negras.rows[0]?.id_usuario;
+      
+      //Movimientos
       const movimientos = partida.getHistorial();
-      console.log('ID Partida se autoincrementa en base de datos');
-      console.log('Usuario blancas -> ', partida.getNombreUsuarioBlancas());
-      console.log('Usuario negras ->', partida.getNombreUsuarioNegras());
-      console.log('Movimientos: ', movimientos);
-      console.log('Ganador:', partida.partidaTerminada().ganador);
-      console.log('Causa:', partida.partidaTerminada().causa_fin_partida);
-      console.log('Fecha de la partida: ', new Date().toLocaleDateString());
+
+      //Resultado partida (causa y id ganador)
+      const ganador = partida.partidaTerminada().ganador;
+      let id_ganador = null;
+      if(ganador){
+        id_ganador = ganador === nombre_usuario_blancas ? id_usuario_blancas : id_usuario_negras;
+      }
+
+      //Fecha
+      const fecha = new Date().toLocaleDateString();
+      const causa_fin_partida = partida.partidaTerminada().causa_fin_partida;
+
+      console.log(`Intentando guardar partida de la sala ${salaId} en la base de datos con los siguientes datos:
+        id_usuario_blancas: ${id_usuario_blancas},
+        id_usuario_negras: ${id_usuario_negras},
+        movimientos: ${JSON.stringify(movimientos)},
+        id_ganador: ${id_ganador},
+        fecha: ${fecha},
+        causa_fin_partida: ${causa_fin_partida}
+      `);
+      
+      try{
+        await partidaModel.insertPartida(
+          id_usuario_blancas,
+          id_usuario_negras,
+          movimientos,
+          id_ganador,
+          fecha, causa_fin_partida
+        );
+
+        console.log('Partida guardada exitosamente en la base de datos: ');
+      }
+      catch(error){
+        console.error('Error al guardar partida en la base de datos: ', error);
+      }
+
       partidas_activas.delete(salaId);
     };
 
