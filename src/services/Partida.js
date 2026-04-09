@@ -126,7 +126,7 @@ export default class Partida {
       ganador = this.getTurno() == 'w' ? this.nombre_usuario_negras : this.nombre_usuario_blancas;
     }else if(this.getTiempoReconexionBlancas() <= 0 || this.getTiempoReconexionNegras() <= 0){
       causa_fin_partida = "Desconexion";
-      ganador = null;
+      ganador = this.getTiempoReconexionBlancas() <= 0 ? this.getNombreUsuarioNegras() : this.getNombreUsuarioBlancas();
     }
 
     return { causa_fin_partida, ganador };

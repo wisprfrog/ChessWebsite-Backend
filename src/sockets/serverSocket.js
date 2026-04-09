@@ -4,7 +4,7 @@ import usuarioModel from '../models/usuario.js';
 
 export default function serverSocket(io) {
   const partidas_activas = new Map();
-  var usuarios_desconectados = new Set();
+  var usuarios_desconectados = new Map(); //cambio de set a map para guardar la tupla jugador-sala
   let cola = new Array();
   let jugadores_en_cola = new Set();
   var sala = 0;
@@ -130,7 +130,7 @@ export default function serverSocket(io) {
         const nombre_usuario_negras = partida.getNombreUsuarioNegras();
         
         if(nombre_usuario_blancas === nombre_usuario_desconectado || nombre_usuario_negras === nombre_usuario_desconectado){
-          usuarios_desconectados.add(salaId, nombre_usuario_desconectado);
+          agregarUsuarioDesconectado(salaId, nombre_usuario_desconectado);
           console.log(`Usuario ${nombre_usuario_desconectado} se ha desconectado del socket de partida ID ${salaId}.`);
         }
       });
@@ -162,27 +162,28 @@ export default function serverSocket(io) {
       });
 
 
-      usuarios_desconectados.forEach((key) => {
-        const [salaId, nombre_usuario] = key;
+      usuarios_desconectados.forEach((nombres_usuarios, salaId) => {
         const partida = partidas_activas?.get(salaId);
-      
-        if(nombre_usuario === partida?.getNombreUsuarioBlancas()){
-          const tiempo_blancas = partida?.getTiempoReconexionBlancas() - 1000;
-          partida?.setTiempoReconexionBlancas(tiempo_blancas);
-        }
-        else{
-          const tiempo_negras = partida?.getTiempoReconexionNegras() - 1000;
-          partida?.setTiempoReconexionNegras(tiempo_negras);
-        }
         
-        const resultado_partida = partida?.partidaTerminada(); 
-        if(resultado_partida?.causa_fin_partida || resultado_partida?.ganador){
-          io.to(salaId).emit('terminar_partida', resultado_partida);
-
-          usuarios_desconectados.delete(key);
+        nombres_usuarios.forEach((nombre_usuario) => {
+          if(nombre_usuario === partida?.getNombreUsuarioBlancas()){
+            const tiempo_blancas = partida?.getTiempoReconexionBlancas() - 1000;
+            partida?.setTiempoReconexionBlancas(tiempo_blancas);
+          }
+          else{
+            const tiempo_negras = partida?.getTiempoReconexionNegras() - 1000;
+            partida?.setTiempoReconexionNegras(tiempo_negras);
+          }
           
-          terminarPartida(salaId);
-        }
+          const resultado_partida = partida?.partidaTerminada(); 
+          if(resultado_partida?.causa_fin_partida || resultado_partida?.ganador){
+            io.to(salaId).emit('terminar_partida', resultado_partida);
+
+            usuarios_desconectados.delete(salaId);
+            
+            terminarPartida(salaId);
+          }
+        });
       });
     }, 1000);
 
@@ -250,8 +251,13 @@ export default function serverSocket(io) {
         const nombre_usuario_negras = partida.getNombreUsuarioNegras();
         
         if(nombre_usuario_blancas == nombre_usuario || nombre_usuario_negras == nombre_usuario){
-          if(nombre_usuario == nombre_usuario_blancas) partida.setTiempoReconexionBlancas(2 * 60000);
-          else partida.setTiempoReconexionNegras(2 * 60000);
+          // quitamos al usuario de la lista de desconectados para esa sala, si es que estaba
+          usuarios_desconectados.get(salaId)?.splice(usuarios_desconectados.get(salaId).indexOf(nombre_usuario), 1);
+          if(nombre_usuario == nombre_usuario_blancas){ 
+            partida.setTiempoReconexionBlancas(2 * 60000);
+          }else{
+            partida.setTiempoReconexionNegras(2 * 60000);
+          }
 
           salaIdEncontrada = salaId;
         }
@@ -270,5 +276,11 @@ export default function serverSocket(io) {
 
       socket.emit('intentar_reconexion', {sala_a_reconectar: sala, nombre_usuario_conectado: nombre_usuario});
     }
+
+    function agregarUsuarioDesconectado(salaId, nombre_usuario_desconectado){
+      if(!usuarios_desconectados.has(salaId)){
+        usuarios_desconectados.set(salaId, []);
+      }
+      usuarios_desconectados.get(salaId).push(nombre_usuario_desconectado);
+    }
   }
-    
