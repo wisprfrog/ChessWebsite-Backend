@@ -1,4 +1,4 @@
-import byscrypt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import usuarioModel from '../models/usuario.js';
 import jwt from 'jsonwebtoken';
 
@@ -76,7 +76,7 @@ export const postUsuario = async (req, res) => {
   if(!nombre_usuario || !correo || !contrasenia) return res.status(400).json({ message: 'Faltan datos requeridos' });
 
   try {
-    const contraseniaEncriptada = await byscrypt.hash(contrasenia, 10);
+    const contraseniaEncriptada = await bcrypt.hash(contrasenia, 10);
 
     const resultado = await usuarioModel.insertUsuario(nombre_usuario, correo, contraseniaEncriptada);
     res.status(201).json({ message: 'Usuario registrado', informacion: resultado.rows });
@@ -101,7 +101,9 @@ export const putNombreUsuario = async (req, res) => {
     return res.status(403).json({ message: 'No autorizado para cambiar el nombre de usuario' });
   }
 
-  const resultadoCorreo = await usuarioModel.selectCorreoUsuario(nombre_usuario);
+  const resultadoCorreo = await usuarioModel.selectCorreoUsuario(nombre_usuario, null, correo);
+
+  if(resultadoCorreo.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
 
   if(correo !== resultadoCorreo.rows[0].correo){
     return res.status(403).json({ message: 'No autorizado para cambiar el nombre de usuario' });
@@ -128,6 +130,8 @@ export const putContraseniaUsuario = async (req, res) => {
     return res.status(400).json({ message: 'Faltan datos requeridos' });
   }
 
+  console.log('Correo del token:', correo_token);
+  console.log('Correo del cuerpo:', correo);
   if(correo_token !== correo){
     return res.status(403).json({ message: 'No autorizado para cambiar la contraseña' });
   }
@@ -135,17 +139,23 @@ export const putContraseniaUsuario = async (req, res) => {
   const resultadoCorreo = await usuarioModel.selectCorreoUsuario(null, null, correo);
   const resultadoContrasenia = await usuarioModel.selectContraseniaUsuario(null, null, correo);
 
-  if(!resultadoCorreo.rows[0] || !resultadoContrasenia.rows[0]){
+  if(resultadoCorreo.rows.length === 0 || resultadoContrasenia.rows.length === 0){
     return res.status(404).json({ message: 'Usuario no encontrado' });
   }
 
-  const isPasswordValid = await byscrypt.compare(contrasenia, resultadoContrasenia.rows[0].contrasenia);
+  const isPasswordValid = await bcrypt.compare(contrasenia, resultadoContrasenia.rows[0].contrasenia);
+  console.log('Contraseña válida:', isPasswordValid);
+  console.log('Contraseña del cuerpo:', contrasenia);
+  console.log('Contraseña en la base de datos:', resultadoContrasenia.rows[0].contrasenia);
+  console.log('Correo en la base de datos:', resultadoCorreo.rows[0].correo);
+  console.log('Resultado correo:', resultadoCorreo);
+  console.log('Resultado contraseña:', resultadoContrasenia);
   if(correo !== resultadoCorreo.rows[0].correo || !isPasswordValid){
     return res.status(403).json({ message: 'No autorizado para cambiar la contraseña' });
   }
 
   try {
-    const contraseniaEncriptada = await byscrypt.hash(nueva_contrasenia, 10);
+    const contraseniaEncriptada = await bcrypt.hash(nueva_contrasenia, 10);
     const resultado = await usuarioModel.updateContraseniaUsuario(correo, contraseniaEncriptada);
 
     res.status(200).json({ message: 'Contraseña actualizada', informacion: resultado.rows });
@@ -202,7 +212,7 @@ export const deleteUsuario = async (req, res) => {
     }
 
     const isPasswordValid = await byscrypt.compare(contrasenia, resultadoContrasenia.rows[0].contrasenia);
-    if(!resultadoCorreo || !resultadoContrasenia || !isPasswordValid){
+    if(resultadoCorreo.rows.length === 0 || resultadoContrasenia.rows.length === 0 || !isPasswordValid){
       return res.status(401).json({ message: 'No autorizado para eliminar el usuario' });
     }
     

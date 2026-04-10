@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { decode } from 'jsonwebtoken';
 
 const verficarToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -8,7 +8,14 @@ const verficarToken = (req, res, next) => {
 
   try{
     // Verificar que el token es válido
-    if(jwt.verify(token, process.env.JWT_SECRET)) next();
+    if(jwt.verify(token, process.env.JWT_SECRET)){
+      const decoded = jwt.decode(token);
+      req.body.id_usuario = decoded.id_usuario;
+      req.body.nombre_usuario = decoded.nombre_usuario;
+      req.body.correo = decoded.correo;
+
+      next();
+    }
     else throw new Error('Token no válido');
   }
   catch(error){

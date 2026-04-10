@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 export const generarToken = async (req, res) => {
   const { id_usuario, nombre_usuario, correo, contrasenia } = req.body;
 
-  if(!contrasenia || (!nombre_usuario && !correo)) return res.status(401).json({ message: 'Faltan datos requeridos' });
+  if(!nombre_usuario && !correo) return res.status(401).json({ message: 'Faltan datos requeridos' });
 
   try{    
     // Generar un token JWT

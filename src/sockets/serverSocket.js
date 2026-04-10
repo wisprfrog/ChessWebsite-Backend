@@ -124,7 +124,7 @@ export default function serverSocket(io) {
 
     socket.on('disconnect', () => {
       const nombre_usuario_desconectado = socket.handshake.auth?.nombre_usuario_actual;
-      
+
       partidas_activas.forEach((partida, salaId) => {
         const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
         const nombre_usuario_negras = partida.getNombreUsuarioNegras();
@@ -269,7 +269,6 @@ export default function serverSocket(io) {
     function buscarSocketSala(socket, nombre_usuario){
       const sala = buscarUsuarioEnPartida(nombre_usuario);
 
-      console.log('Sala encontrada para el usuario ', nombre_usuario, ': ', sala);
       if(sala !== null){
         console.log(`Usuario ${nombre_usuario} se encuentra en la sala ${sala}. Intentando reconexión...`);
       }

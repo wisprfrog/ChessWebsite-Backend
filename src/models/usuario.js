@@ -1,15 +1,15 @@
 import turso from '../config/db.js';
 
 const usuarioModel = {
-  selectDatosUsuario : async (nombre_usuario, correo) => {
-    if(nombre_usuario){
+  selectDatosUsuario: async (nombre_usuario, correo) => {
+    if (nombre_usuario) {
       const resultado = await turso.execute(
         `SELECT * FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
       );
 
       return resultado;
     }
-    else if(correo){
+    else if (correo) {
       const resultado = await turso.execute(
         `SELECT * FROM usuario WHERE correo = '${correo}'`
       );
@@ -18,7 +18,7 @@ const usuarioModel = {
     }
   },
 
-  selectNombreUsuarios : async () => {
+  selectNombreUsuarios: async () => {
     const resultado = await turso.execute(
       `SELECT nombre_usuario FROM usuario`
     );
@@ -26,7 +26,7 @@ const usuarioModel = {
     return resultado;
   },
 
-  selectNombreUsuario : async (id_usuario, correo) => {
+  selectNombreUsuario: async (id_usuario, correo) => {
     const resultado = await turso.execute(
       `SELECT nombre_usuario FROM usuario WHERE id_usuario = '${id_usuario}' OR correo = '${correo}'`
     );
@@ -34,7 +34,7 @@ const usuarioModel = {
     return resultado;
   },
 
-  selectIdUsuarios : async () => {
+  selectIdUsuarios: async () => {
     const resultado = await turso.execute(
       `SELECT id_usuario FROM usuario`
     );
@@ -42,64 +42,69 @@ const usuarioModel = {
     return resultado;
   },
 
-  selectIdUsuario : async (nombre_usuario, correo) => {
-    if(nombre_usuario){
+  selectIdUsuario: async (nombre_usuario, correo) => {
+    if (nombre_usuario) {
       const resultado = await turso.execute(
         `SELECT id_usuario FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
       );
-    
+
       return resultado;
     }
-    else if(correo){
+    else if (correo) {
       const resultado = await turso.execute(
         `SELECT id_usuario FROM usuario WHERE correo = '${correo}'`
       );
-      
+
       return resultado;
     }
-    
+
   },
 
-  selectCorreoUsuario : async (nombre_usuario, id_usuario, correo) => {
-    if(nombre_usuario){
-      const resultado = await turso.execute(
-        `SELECT correo FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
-      )
+  selectCorreoUsuario: async (nombre_usuario, id_usuario, correo) => {
+    try {
+      if (nombre_usuario) {
+        const resultado = await turso.execute(
+          `SELECT correo FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
+        )
 
-      return resultado;
+        return resultado;
+      }
+      else if (id_usuario) {
+        const resultado = await turso.execute(
+          `SELECT correo FROM usuario WHERE id_usuario = '${id_usuario}'`
+        )
+
+        return resultado;
+      }
+      else if (correo) {
+        const resultado = await turso.execute(
+          `SELECT correo FROM usuario WHERE correo = '${correo}'`
+        )
+
+        return resultado;
+      }
     }
-    else if(id_usuario){
-      const resultado = await turso.execute(
-        `SELECT correo FROM usuario WHERE id_usuario = '${id_usuario}'`
-      )
-
-      return resultado;
-    }
-    else if(correo){
-      const resultado = await turso.execute(
-        `SELECT correo FROM usuario WHERE correo = '${correo}'`
-      )
-
-      return resultado;
+    catch (error) {
+      console.log('Error en selectCorreoUsuario:', error);
     }
   },
 
-  selectContraseniaUsuario : async (nombre_usuario, id_usuario, correo) => {
-    if(nombre_usuario){
+  selectContraseniaUsuario: async (nombre_usuario, id_usuario, correo) => {
+    if (nombre_usuario) {
       const resultado = await turso.execute(
         `SELECT contrasenia FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
       )
 
       return resultado;
     }
-    else if(id_usuario){
+    else if (id_usuario) {
       const resultado = await turso.execute(
         `SELECT contrasenia FROM usuario WHERE id_usuario = '${id_usuario}'`
       )
 
       return resultado;
     }
-    else if(correo){
+    else if (correo) {
       const resultado = await turso.execute(
         `SELECT contrasenia FROM usuario WHERE correo = '${correo}'`
       )
@@ -108,7 +113,7 @@ const usuarioModel = {
     }
   },
 
-  insertUsuario : async (nombre_usuario, correo, contrasenia) => {
+  insertUsuario: async (nombre_usuario, correo, contrasenia) => {
     const resultado = await turso.execute(
       `INSERT INTO usuario (nombre_usuario, correo, contrasenia) VALUES ('${nombre_usuario}', '${correo}', '${contrasenia}') RETURNING id_usuario`
     );
@@ -116,7 +121,7 @@ const usuarioModel = {
     return resultado;
   },
 
-  updateNombreUsuario : async (nombre_usuario, nuevo_nombre_usuario) => {
+  updateNombreUsuario: async (nombre_usuario, nuevo_nombre_usuario) => {
     const resultado = await turso.execute(
       `UPDATE usuario SET nombre_usuario = '${nuevo_nombre_usuario}' WHERE nombre_usuario = '${nombre_usuario}'`
     );
@@ -124,30 +129,30 @@ const usuarioModel = {
     return resultado;
   },
 
-  updateContraseniaUsuario : async (correo, nueva_contrasenia) => {
+  updateContraseniaUsuario: async (correo, nueva_contrasenia) => {
     const resultado = await turso.execute(
       `UPDATE usuario SET contrasenia = '${nueva_contrasenia}' WHERE correo = '${correo}'`
     );
-    
+
     return resultado;
   },
 
-  deleteUsuarioSQL : async (id_usuario, nombre_usuario, correo) => {
-    if(id_usuario){
+  deleteUsuarioSQL: async (id_usuario, nombre_usuario, correo) => {
+    if (id_usuario) {
       const resultado = await turso.execute(
         `DELETE FROM usuario WHERE id_usuario = '${id_usuario}'`
       )
 
       return resultado;
     }
-    else if(nombre_usuario){
+    else if (nombre_usuario) {
       const resultado = await turso.execute(
         `DELETE FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
       )
 
       return resultado;
     }
-    else if(correo){
+    else if (correo) {
       const resultado = await turso.execute(
         `DELETE FROM usuario WHERE correo = '${correo}'`
       )
