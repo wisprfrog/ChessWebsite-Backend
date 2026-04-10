@@ -5,8 +5,8 @@ import { deletePartidas } from '../controllers/partida.controller.js';
 
 const partidaRouter = Router();
 
-partidaRouter.get('/id_partida', getPartida);
-partidaRouter.get('/id_usuario/partidas', getPartidasUsuario);
+partidaRouter.post('/id_partida', verificarToken, getPartida);
+partidaRouter.post('/id_usuario/partidas', verificarToken, getPartidasUsuario);
 partidaRouter.post('/', postPartida);
 partidaRouter.delete('/id_partida', verificarToken, deletePartidas);
 

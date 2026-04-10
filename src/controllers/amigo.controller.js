@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 
 export const getAmigos = async (req, res) => {
   const { id_usuario } = req.body;
-
   if (!id_usuario) return res.status(401).json({ message: 'Faltan datos requeridos' });
 
   const resultado = await amigosModel.selectAmigos(id_usuario);

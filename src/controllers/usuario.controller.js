@@ -44,7 +44,6 @@ export const getIdUsuarios = async (req, res) => {
 
 export const getIdUsuario = async (req, res) => {
   const {nombre_usuario, correo} = req.body;
-
   if(!nombre_usuario && !correo) return res.status(400).json({ message: 'Faltan datos requeridos' });
 
   try{

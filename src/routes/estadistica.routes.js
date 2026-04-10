@@ -4,7 +4,7 @@ import verificarToken from '../middlewares/verificarToken.js';
 
 const estadisticaRouter = Router();
 
-estadisticaRouter.get('/id_usuario', getEstadistica);
+estadisticaRouter.post('/id_usuario', verificarToken, getEstadistica);
 estadisticaRouter.post('/', postEstadistica);
 estadisticaRouter.put('/id_usuario/ganadas', putEstadisticaGanadas);
 estadisticaRouter.put('/id_usuario/perdidas', putEstadisticaPerdidas);

@@ -12,11 +12,11 @@ import agregarInfoLogin from '../middlewares/agregarInfoLogin.js';
 const usuarioRouter = Router();
 
 // Ruta PRIVADA para obtener información del usuario, protegida por el middleware de verificación de token
-usuarioRouter.get('/id_usuario/datos', verificarToken, getDatosUsuario);
+usuarioRouter.post('/id_usuario/datos', verificarToken, getDatosUsuario);
 usuarioRouter.get('/nombre_usuario', getNombreUsuarios);
 usuarioRouter.get('/id_usuario/usuario', getIdUsuarios);
-usuarioRouter.get('/id_usuario', getIdUsuario);
-usuarioRouter.get('/id_usuario/correo', getCorreoUsuario);
+usuarioRouter.post('/id_usuario',  verificarToken, getIdUsuario);
+usuarioRouter.post('/id_usuario/correo', verificarToken, getCorreoUsuario);
 
 // Ruta PUBLICA para hacer login
 usuarioRouter.post('/login/token', agregarInfoLogin, generarToken); //genera token
