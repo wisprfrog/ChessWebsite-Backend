@@ -15,7 +15,7 @@ const usuarioRouter = Router();
 usuarioRouter.post('/id_usuario/datos', verificarToken, getDatosUsuario);
 usuarioRouter.get('/nombre_usuario', getNombreUsuarios);
 usuarioRouter.get('/id_usuario/usuario', getIdUsuarios);
-usuarioRouter.post('/id_usuario',  verificarToken, getIdUsuario);
+usuarioRouter.post('/id_usuario', getIdUsuario);
 usuarioRouter.post('/id_usuario/correo', verificarToken, getCorreoUsuario);
 
 // Ruta PUBLICA para hacer login
