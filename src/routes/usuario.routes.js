@@ -8,6 +8,7 @@ import { deleteUsuario, aceptarLogin } from '../controllers/usuario.controller.j
 
 import verificarToken from '../middlewares/verificarToken.js';
 import agregarInfoLogin from '../middlewares/agregarInfoLogin.js';
+import validarContrasenia from '../middlewares/validarContrasenia.js';
 
 const usuarioRouter = Router();
 
@@ -19,7 +20,7 @@ usuarioRouter.post('/id_usuario', getIdUsuario);
 usuarioRouter.post('/id_usuario/correo', verificarToken, getCorreoUsuario);
 
 // Ruta PUBLICA para hacer login
-usuarioRouter.post('/login/token', agregarInfoLogin, generarToken); //genera token
+usuarioRouter.post('/login/token', agregarInfoLogin, validarContrasenia, generarToken); //genera token
 usuarioRouter.post('/login', verificarToken, aceptarLogin); //verifica credenciales sin generar token
 usuarioRouter.post('/', postUsuario);
 

@@ -10,6 +10,9 @@ const agregarInfoLogin = async (req, res, next) => {
   try {
     if(nombre_usuario){
       const id_resultado = await usuarioModel.selectIdUsuario(nombre_usuario, null);
+      if (!id_resultado?.rows?.length) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
       req.body.id_usuario = id_resultado.rows[0].id_usuario;
 
       const correo_resultado = await usuarioModel.selectCorreoUsuario(null, id_resultado.rows[0].id_usuario, null);
@@ -17,6 +20,9 @@ const agregarInfoLogin = async (req, res, next) => {
     }
     else if(correo){
       const id_resultado = await usuarioModel.selectIdUsuario(null, correo);
+      if (!id_resultado?.rows?.length) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
       req.body.id_usuario = id_resultado.rows[0].id_usuario;
 
       const nombre_resultado = await usuarioModel.selectNombreUsuario(id_resultado.rows[0].id_usuario, null);

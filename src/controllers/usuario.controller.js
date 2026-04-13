@@ -210,7 +210,7 @@ export const deleteUsuario = async (req, res) => {
       resultadoContrasenia = await usuarioModel.selectContraseniaUsuario(null, null, correo);
     }
 
-    const isPasswordValid = await byscrypt.compare(contrasenia, resultadoContrasenia.rows[0].contrasenia);
+    const isPasswordValid = await bcrypt.compare(contrasenia, resultadoContrasenia.rows[0].contrasenia);
     if(resultadoCorreo.rows.length === 0 || resultadoContrasenia.rows.length === 0 || !isPasswordValid){
       return res.status(401).json({ message: 'No autorizado para eliminar el usuario' });
     }
