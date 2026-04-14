@@ -1,6 +1,7 @@
 import  Partida  from '../services/Partida.js';
 import partidaModel from '../models/partida.js';
 import usuarioModel from '../models/usuario.js';
+import estadisticaModel from '../models/estadistica.js';
 
 export default function serverSocket(io) {
   const partidas_activas = new Map();
@@ -237,6 +238,25 @@ export default function serverSocket(io) {
       }
       catch(error){
         console.error('Error al guardar partida en la base de datos: ', error);
+      }
+
+      try{
+        ///actualizar estadisticas de los jugadores
+        if(id_ganador){
+          await estadisticaModel.updateEstadisticaGanadas(id_ganador);
+          if(id_ganador === id_usuario_blancas){
+            await estadisticaModel.updateEstadisticaPerdidas(id_usuario_negras);
+          }
+          else{
+            await estadisticaModel.updateEstadisticaPerdidas(id_usuario_blancas);
+          }
+        }else{
+          await estadisticaModel.updateEstadisticaTablas(id_usuario_blancas);
+          await estadisticaModel.updateEstadisticaTablas(id_usuario_negras);
+        }
+        console.log('Estadísticas actualizadas exitosamente en la base de datos');
+      }catch(error){
+        console.error('Error al actualizar estadísticas: ', error);
       }
 
       partidas_activas.delete(salaId);

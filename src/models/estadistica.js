@@ -1,5 +1,27 @@
 import turso from '../config/db.js';
 
+async function crearRegistroEstadistica(id_usuario) {
+    try {
+        const existeRegistro = await turso.execute(
+            `SELECT 1 FROM estadistica WHERE id_usuario = '${id_usuario}' LIMIT 1`
+        );
+
+        if (existeRegistro.rows.length > 0) {
+            console.log('Registro de estadistica ya existe para el usuario: ', id_usuario);
+            return;
+        }
+
+        const resultado = await turso.execute(
+            `INSERT INTO estadistica (id_usuario) VALUES ('${id_usuario}')`
+        );
+        console.log('Registro de estadistica creado para el usuario: ', id_usuario);
+        console.log(resultado);
+        return resultado;
+    } catch (error) {
+        throw new Error('Error al insertar estadistica: ' + error.message);
+    }
+}
+
 const estadisticaModel = {
     selectEstadisticaPorUsuario : async(id_usuario) => {
         const resultado = await turso.execute(
@@ -22,6 +44,8 @@ const estadisticaModel = {
 
     updateEstadisticaGanadas : async(id_usuario) => {
         try{
+            await crearRegistroEstadistica(id_usuario);
+
             const resultado = await turso.execute(
                 `UPDATE estadistica SET ganadas = ganadas + 1, partidas_jug = partidas_jug + 1 WHERE id_usuario = '${id_usuario}'`
             );
@@ -33,6 +57,8 @@ const estadisticaModel = {
 
     updateEstadisticaPerdidas : async(id_usuario) => {
         try{
+            await crearRegistroEstadistica(id_usuario);
+
             const resultado = await turso.execute(
                 `UPDATE estadistica SET perdidas = perdidas + 1, partidas_jug = partidas_jug + 1 WHERE id_usuario = '${id_usuario}'`
             );
@@ -44,6 +70,8 @@ const estadisticaModel = {
 
     updateEstadisticaTablas : async(id_usuario) => {
         try{
+            await crearRegistroEstadistica(id_usuario);
+
             const resultado = await turso.execute(
                 `UPDATE estadistica SET tablas = tablas + 1, partidas_jug = partidas_jug + 1 WHERE id_usuario = '${id_usuario}'`
             );
