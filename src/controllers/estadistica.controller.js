@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 
 export const getEstadistica = async (req, res) => {
     const { id_usuario } = req.body;
-    console.log(id_usuario);
     if (!id_usuario) return res.status(400).json({ message: 'Faltan datos requeridos' });
 
     const resultado = await estadisticaModel.selectEstadisticaPorUsuario(id_usuario);

@@ -129,8 +129,6 @@ export const putContraseniaUsuario = async (req, res) => {
     return res.status(400).json({ message: 'Faltan datos requeridos' });
   }
 
-  console.log('Correo del token:', correo_token);
-  console.log('Correo del cuerpo:', correo);
   if(correo_token !== correo){
     return res.status(403).json({ message: 'No autorizado para cambiar la contraseña' });
   }
@@ -143,12 +141,6 @@ export const putContraseniaUsuario = async (req, res) => {
   }
 
   const isPasswordValid = await bcrypt.compare(contrasenia, resultadoContrasenia.rows[0].contrasenia);
-  console.log('Contraseña válida:', isPasswordValid);
-  console.log('Contraseña del cuerpo:', contrasenia);
-  console.log('Contraseña en la base de datos:', resultadoContrasenia.rows[0].contrasenia);
-  console.log('Correo en la base de datos:', resultadoCorreo.rows[0].correo);
-  console.log('Resultado correo:', resultadoCorreo);
-  console.log('Resultado contraseña:', resultadoContrasenia);
   if(correo !== resultadoCorreo.rows[0].correo || !isPasswordValid){
     return res.status(403).json({ message: 'No autorizado para cambiar la contraseña' });
   }
@@ -180,8 +172,6 @@ export const deleteUsuario = async (req, res) => {
     if(id_usuario){
       const id_usuario_token = decodedToken.id_usuario;
 
-      console.log('ID del token:', id_usuario_token);
-      console.log('ID del cuerpo:', id_usuario);
       if(id_usuario_token !== id_usuario){
         return res.status(403).json({ message: 'No autorizado para eliminar el usuario' });
       }

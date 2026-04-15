@@ -5,7 +5,8 @@ import estadisticaModel from '../models/estadistica.js';
 
 export default function serverSocket(io) {
   const partidas_activas = new Map();
-  var usuarios_desconectados = new Map(); //cambio de set a map para guardar la tupla jugador-sala
+  const usuarios_desconectados = new Map(); // Map<salaId, Set<nombre_usuario>>
+  const partidas_finalizando = new Set();
   let cola = new Array();
   let jugadores_en_cola = new Set();
   var sala = 0;
@@ -75,7 +76,7 @@ export default function serverSocket(io) {
         if(partida_actual.partidaTerminada().causa_fin_partida){
           const resultado_partida = partida_actual.partidaTerminada();
           io.to(sala).emit('terminar_partida', resultado_partida);
-          terminarPartida(sala);
+          terminarPartidaSeguro(sala);
         }
       }
     });
@@ -158,7 +159,7 @@ export default function serverSocket(io) {
         const resultado_partida = partida.partidaTerminada();
         if(resultado_partida.causa_fin_partida){
           io.to(salaId).emit('terminar_partida', resultado_partida);
-          terminarPartida(salaId);
+          terminarPartidaSeguro(salaId);
         }
       });
 
@@ -182,14 +183,30 @@ export default function serverSocket(io) {
 
             usuarios_desconectados.delete(salaId);
             
-            terminarPartida(salaId);
+            terminarPartidaSeguro(salaId);
           }
         });
       });
     }, 1000);
 
+    function terminarPartidaSeguro(salaId) {
+      if (partidas_finalizando.has(salaId)) {
+        return;
+      }
+
+      partidas_finalizando.add(salaId);
+      terminarPartida(salaId)
+        .catch((error) => {
+          console.error(`Error finalizando partida de la sala ${salaId}:`, error);
+        })
+        .finally(() => {
+          partidas_finalizando.delete(salaId);
+        });
+    }
+
     async function terminarPartida(salaId){
       const partida = partidas_activas.get(salaId);
+      if(!partida) return;
       
       //DATOS A GUARDAR EN LA BASE DE DATOS
       //Preparando id usuarios
@@ -272,7 +289,7 @@ export default function serverSocket(io) {
         
         if(nombre_usuario_blancas == nombre_usuario || nombre_usuario_negras == nombre_usuario){
           // quitamos al usuario de la lista de desconectados para esa sala, si es que estaba
-          usuarios_desconectados.get(salaId)?.splice(usuarios_desconectados.get(salaId).indexOf(nombre_usuario), 1);
+          usuarios_desconectados.get(salaId)?.delete(nombre_usuario);
           if(nombre_usuario == nombre_usuario_blancas){ 
             partida.setTiempoReconexionBlancas(2 * 60000);
           }else{
@@ -298,8 +315,8 @@ export default function serverSocket(io) {
 
     function agregarUsuarioDesconectado(salaId, nombre_usuario_desconectado){
       if(!usuarios_desconectados.has(salaId)){
-        usuarios_desconectados.set(salaId, []);
+        usuarios_desconectados.set(salaId, new Set());
       }
-      usuarios_desconectados.get(salaId).push(nombre_usuario_desconectado);
+      usuarios_desconectados.get(salaId).add(nombre_usuario_desconectado);
     }
   }
