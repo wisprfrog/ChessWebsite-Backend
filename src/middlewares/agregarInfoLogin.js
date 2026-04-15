@@ -8,6 +8,7 @@ const agregarInfoLogin = async (req, res, next) => {
   }
 
   try {
+    console.log('Agregando información de login para:', nombre_usuario || correo);
     if(nombre_usuario){
       const id_resultado = await usuarioModel.selectIdUsuario(nombre_usuario, null);
       if (!id_resultado?.rows?.length) {

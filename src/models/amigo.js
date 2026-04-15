@@ -1,9 +1,10 @@
 import turso from '../config/db.js';
 
 const amigosModel = {
+  
   selectAmigos : async(id_usuario) => {
     const resultado = await turso.execute(
-      `SELECT id_amigo FROM amigo WHERE id_usuario = '${id_usuario}'`
+      `SELECT id_amigo, nombre_usuario as nombre_amigo FROM amigo JOIN usuario ON amigo.id_amigo = usuario.id_usuario WHERE amigo.id_usuario = '${id_usuario}'`
     );
 
     return resultado;
