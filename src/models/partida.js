@@ -38,6 +38,20 @@ const partidaModel = {
         }catch(error){
             throw new Error('Error al eliminar partidas: ' + error.message);
         }
+    },
+
+    obtenerMovimientosPorId : async(id_partida) => {
+        try {
+            const resultado = await turso.execute(
+                `SELECT movimientos FROM partida WHERE id_partida = '${id_partida}'`
+            );
+            if (resultado.rows.length === 0) {
+                throw new Error('Partida no encontrada');
+            }
+            return resultado.rows[0].movimientos;
+        } catch (error) {
+            throw new Error('Error al obtener movimientos: ' + error.message);
+        }
     }
 
 };

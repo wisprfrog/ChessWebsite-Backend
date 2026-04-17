@@ -64,8 +64,18 @@ export const deletePartidas = async (req, res) => {
     catch(error){
         return res.status(500).json({ message: 'Error al eliminar partidas' });
     }
-
 }
+
+export const getRepeticionPartida = async (req, res) => {
+    const { id_partida } = req.body;
+    
+    try {
+        const movimientos = await partidaModel.obtenerMovimientosPorId(id_partida);
+        return res.status(200).json({ message: 'Movimientos encontrados', movimientos });
+    } catch (error) {
+        return res.status(404).json({ message: 'Partida no encontrada' });
+    }
+};
 
 export const getHistorialPorNombre = async (req, res) => {
   const { nombre_usuario } = req.body;

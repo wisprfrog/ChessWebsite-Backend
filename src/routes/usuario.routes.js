@@ -19,6 +19,7 @@ usuarioRouter.post('/id_usuario/datos', verificarToken, getDatosUsuario);
 usuarioRouter.get('/nombre_usuario', getNombreUsuarios);
 usuarioRouter.get('/id_usuario/usuario', getIdUsuarios);
 usuarioRouter.post('/id_usuario', getIdUsuario);
+usuarioRouter.post('/id_usuario/nombre_usuario', getNombreUsuarioById);
 
 // Ruta PUBLICA para hacer login
 usuarioRouter.post('/login/token', agregarInfoLogin, validarContrasenia, generarToken); //genera token
