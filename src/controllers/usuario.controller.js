@@ -55,6 +55,19 @@ export const getIdUsuario = async (req, res) => {
   }
 }
 
+export const getNombreUsuarioById = async (req, res) => {
+  const {id_usuario} = req.body;
+  if(!id_usuario) return res.status(400).json({ message: 'Faltan datos requeridos' });
+
+  try{
+    const resultado = await usuarioModel.selectNombreUsuarioById(id_usuario);
+    res.status(200).json({ message: 'Nombre del usuario:', nombres: resultado.rows });
+  }
+  catch(error){
+    res.status(500).json({ message: 'Error interno del servidor', error });
+  }
+}
+
 export const getCorreoUsuario = async (req, res) => {
   const {nombre_usuario, id_usuario} = req.body;
 

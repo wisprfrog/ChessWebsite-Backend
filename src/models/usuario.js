@@ -18,6 +18,14 @@ const usuarioModel = {
     }
   },
 
+  selectNombreUsuarioById: async (id_usuario) => {
+    const resultado = await turso.execute(
+      `SELECT nombre_usuario FROM usuario WHERE id_usuario = '${id_usuario}'`
+    );
+
+    return resultado;
+  },
+
   selectNombreUsuarios: async () => {
     const resultado = await turso.execute(
       `SELECT nombre_usuario FROM usuario`

@@ -1,5 +1,6 @@
 import partidaModel from '../models/partida.js';
 import jwt from 'jsonwebtoken';
+import turso from '../config/db.js';
 
 export const getPartida = async (req, res) => {
     const { id_partida } = req.body;
@@ -64,4 +65,33 @@ export const deletePartidas = async (req, res) => {
         return res.status(500).json({ message: 'Error al eliminar partidas' });
     }
 
+}
+
+export const getHistorialPorNombre = async (req, res) => {
+  const { nombre_usuario } = req.body;
+  if (!nombre_usuario) return res.status(400).json({ message: 'Falta el nombre de usuario' });
+
+  try {
+    // Aquí está la magia: Cruzamos la tabla de partidas con la de usuarios 3 veces
+    // (una para las blancas, una para las negras, y un LEFT JOIN para el ganador)
+    const query = `
+      SELECT 
+        p.id_partida, 
+        p.fecha, 
+        ub.nombre_usuario AS blancas, 
+        un.nombre_usuario AS negras, 
+        ug.nombre_usuario AS ganador
+      FROM partida p
+      JOIN usuario ub ON p.id_usuario_blancas = ub.id_usuario
+      JOIN usuario un ON p.id_usuario_negras = un.id_usuario
+      LEFT JOIN usuario ug ON p.id_ganador = ug.id_usuario
+      WHERE ub.nombre_usuario = '${nombre_usuario}' OR un.nombre_usuario = '${nombre_usuario}'
+    `;
+
+    const resultado = await turso.execute(query);
+    res.status(200).json({ partidas: resultado.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error interno del servidor', error });
+  }
 }
