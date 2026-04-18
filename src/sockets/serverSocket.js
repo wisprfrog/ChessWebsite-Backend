@@ -74,8 +74,10 @@ export default function serverSocket(io) {
         }
 
         const fenMovimiento = partida_actual.partida_chess_js?.fen();
+        const historialMovimientos = partida_actual.getHistorial();
+        console.log("listado movimientos: ", historialMovimientos);
 
-        juego.to(sala).emit('cargar_juego', ({fenPartida: fenMovimiento, nombre_usuario_blancas: partida_actual.getNombreUsuarioBlancas(), nombre_usuario_negras: partida_actual.getNombreUsuarioNegras()}));
+        io.to(sala).emit('cargar_juego', ({fenPartida: fenMovimiento, nombre_usuario_blancas: partida_actual.getNombreUsuarioBlancas(), nombre_usuario_negras: partida_actual.getNombreUsuarioNegras(), historial_juego: historialMovimientos}));
         if(partida_actual.partidaTerminada().causa_fin_partida){
           const resultado_partida = partida_actual.partidaTerminada();
           juego.to(sala).emit('terminar_partida', resultado_partida);
@@ -124,7 +126,8 @@ export default function serverSocket(io) {
       const fenPartida = partidas_activas.get(sala)?.partida_chess_js.fen();
       const nombre_usuario_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
       const nombre_usuario_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
-      juego.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras}));
+      const historialMovimientos = partidas_activas.get(sala)?.getHistorial();
+      io.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras, historial_juego: historialMovimientos}));
     });
 
     socket.on('disconnect', () => {
