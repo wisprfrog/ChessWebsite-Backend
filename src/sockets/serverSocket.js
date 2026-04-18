@@ -2,8 +2,11 @@ import  Partida  from '../services/Partida.js';
 import partidaModel from '../models/partida.js';
 import usuarioModel from '../models/usuario.js';
 import estadisticaModel from '../models/estadistica.js';
+import amigosModel from '../models/amigo.js';
 
 export default function serverSocket(io) {
+  const juego = io.of('/juego');
+
   const partidas_activas = new Map();
   const usuarios_desconectados = new Map(); // Map<salaId, Set<nombre_usuario>>
   const partidas_finalizando = new Set();
@@ -11,7 +14,7 @@ export default function serverSocket(io) {
   let jugadores_en_cola = new Set();
   var sala = 0;
 
-  io.on('connection', (socket) => {
+  juego.on('connection', (socket) => {
     const nombre_usuario_conectado = socket.handshake.auth?.nombre_usuario_actual;
     
     if(!nombre_usuario_conectado){
@@ -37,7 +40,7 @@ export default function serverSocket(io) {
         jugadores_en_cola.delete(nom_jugador2);
 
         console.log(`Partida encontrada entre ${nom_jugador1} y ${nom_jugador2} en la sala ${sala}.`);
-        io.emit('partida_encontrada', {
+        juego.emit('partida_encontrada', {
           sala_asignada: sala.toString(),
           nombre_usuario1: nom_jugador1,
           nombre_usuario2: nom_jugador2
@@ -72,10 +75,10 @@ export default function serverSocket(io) {
 
         const fenMovimiento = partida_actual.partida_chess_js?.fen();
 
-        io.to(sala).emit('cargar_juego', ({fenPartida: fenMovimiento, nombre_usuario_blancas: partida_actual.getNombreUsuarioBlancas(), nombre_usuario_negras: partida_actual.getNombreUsuarioNegras()}));
+        juego.to(sala).emit('cargar_juego', ({fenPartida: fenMovimiento, nombre_usuario_blancas: partida_actual.getNombreUsuarioBlancas(), nombre_usuario_negras: partida_actual.getNombreUsuarioNegras()}));
         if(partida_actual.partidaTerminada().causa_fin_partida){
           const resultado_partida = partida_actual.partidaTerminada();
-          io.to(sala).emit('terminar_partida', resultado_partida);
+          juego.to(sala).emit('terminar_partida', resultado_partida);
           terminarPartidaSeguro(sala);
         }
       }
@@ -121,7 +124,7 @@ export default function serverSocket(io) {
       const fenPartida = partidas_activas.get(sala)?.partida_chess_js.fen();
       const nombre_usuario_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
       const nombre_usuario_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
-      io.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras}));
+      juego.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras}));
     });
 
     socket.on('disconnect', () => {
@@ -154,11 +157,11 @@ export default function serverSocket(io) {
           negras: partida.getTiempoNuevoNegras()
         };
 
-        io.to(salaId).emit('actualizar_tiempos', tiempo_restante);
+        juego.to(salaId).emit('actualizar_tiempos', tiempo_restante);
 
         const resultado_partida = partida.partidaTerminada();
         if(resultado_partida.causa_fin_partida){
-          io.to(salaId).emit('terminar_partida', resultado_partida);
+          juego.to(salaId).emit('terminar_partida', resultado_partida);
           terminarPartidaSeguro(salaId);
         }
       });
@@ -179,7 +182,7 @@ export default function serverSocket(io) {
           
           const resultado_partida = partida?.partidaTerminada(); 
           if(resultado_partida?.causa_fin_partida || resultado_partida?.ganador){
-            io.to(salaId).emit('terminar_partida', resultado_partida);
+            juego.to(salaId).emit('terminar_partida', resultado_partida);
 
             usuarios_desconectados.delete(salaId);
             
@@ -318,5 +321,115 @@ export default function serverSocket(io) {
         usuarios_desconectados.set(salaId, new Set());
       }
       usuarios_desconectados.get(salaId).add(nombre_usuario_desconectado);
+    }
+
+    //socket para el sitio web
+    const monster_chess = io.of('/monster_chess');
+    let solicitud_amistad = new Map();    
+    let solicitud_amistad_enviadas = new Map();
+
+    monster_chess.on('connection', (socket) => {
+      const nombre_usuario_conectado = socket.handshake.auth?.nombre_usuario_actual;
+
+      console.log(`Usuario ${nombre_usuario_conectado} se ha conectado al namespace de Monster Chess.`);
+      
+      socket.on('pedir_solicitudes_amistad', ({nombre_usuario}) => {
+        console.log(`Usuario ${nombre_usuario} ha solicitado sus solicitudes de amistad.`);
+        socket.emit('cargar_solicitudes_amistad', ({
+          nombre_usuario_destino: nombre_usuario,
+          solicitudes: solicitud_amistad.has(nombre_usuario) ? Array.from(solicitud_amistad.get(nombre_usuario)) : []
+        }));
+      });
+
+      socket.on('pedir_solicitudes_amistad_enviadas', ({nombre_usuario}) => {
+        console.log(`Usuario ${nombre_usuario} ha solicitado sus solicitudes de amistad.`);
+        socket.emit('cargar_solicitudes_amistad_enviadas', ({
+          nombre_usuario_destino: nombre_usuario,
+          solicitudes: solicitud_amistad_enviadas.has(nombre_usuario) ? Array.from(solicitud_amistad_enviadas.get(nombre_usuario)) : []
+        }));
+      });
+
+      socket.on('enviar_solicitud_amistad', ({nombre_usuario_destino, nombre_usuario_origen}) => {
+        //validar que no sean amigos ya
+        
+        if (!solicitud_amistad.has(nombre_usuario_destino)) {
+          solicitud_amistad.set(nombre_usuario_destino, new Set());
+        }
+
+        if(!solicitud_amistad_enviadas.has(nombre_usuario_origen)){
+          solicitud_amistad_enviadas.set(nombre_usuario_origen, new Set());
+        }
+        
+        solicitud_amistad.get(nombre_usuario_destino).add(nombre_usuario_origen);
+        solicitud_amistad_enviadas.get(nombre_usuario_origen).add(nombre_usuario_destino);
+
+        monster_chess.emit('nueva_solicitud_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: Array.from(solicitud_amistad.get(nombre_usuario_destino))}));
+        monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: Array.from(solicitud_amistad_enviadas.get(nombre_usuario_origen))}));
+        console.log(`Solicitud de amistad enviada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
+      })
+
+      socket.on('cancelar_solicitud_amistad', ({nombre_usuario_origen, nombre_usuario_destino}) => {
+        solicitud_amistad.get(nombre_usuario_destino)?.delete(nombre_usuario_origen);
+        solicitud_amistad_enviadas.get(nombre_usuario_origen)?.delete(nombre_usuario_destino);
+        console.log(`Solicitud de amistad cancelada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
+        
+        monster_chess.emit('cargar_solicitudes_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: Array.from(solicitud_amistad.get(nombre_usuario_destino) || [])}));
+        monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: Array.from(solicitud_amistad_enviadas.get(nombre_usuario_origen) || [])}));
+      });
+
+      socket.on('aceptar_solicitud_amistad', async ({nombre_usuario1, nombre_usuario2}) => {
+        if (solicitud_amistad.has(nombre_usuario1)) {
+          solicitud_amistad.get(nombre_usuario1).delete(nombre_usuario2);
+
+          solicitud_amistad_enviadas.get(nombre_usuario2)?.delete(nombre_usuario1);
+
+          const id_origen = await obtenerIdUsuario(nombre_usuario1);
+          const id_destino = await obtenerIdUsuario(nombre_usuario2);
+
+          if(!id_origen || !id_destino){
+            console.error(`Error al obtener IDs de usuarios para ${nombre_usuario1} y ${nombre_usuario2}. No se pudo crear la amistad.`);
+            return;
+          }
+
+          console.log(`Intentando crear amistad entre ${id_origen} y ${id_destino}...`);
+          const amistadCreada = await crearAmistad(id_origen, id_destino);
+
+          if(amistadCreada){
+            console.log(`Amistad creada entre ${nombre_usuario1} y ${nombre_usuario2}`);
+            socket.emit('solicitud_amistad_aceptada', ({nombre_usuario1, nombre_usuario2}));
+          }
+          console.log(`Solicitud de amistad aceptada entre ${nombre_usuario1} y ${nombre_usuario2}`);
+        }
+      })
+      
+      socket.on('rechazar_solicitud_amistad', ({nombre_usuario_origen, nombre_usuario_destino}) => {
+        if (solicitud_amistad.has(nombre_usuario_origen)) {
+          solicitud_amistad.get(nombre_usuario_origen)?.delete(nombre_usuario_destino);
+          solicitud_amistad_enviadas.get(nombre_usuario_destino)?.delete(nombre_usuario_origen);
+
+          socket.emit('solicitud_amistad_rechazada', ({nombre_usuario1: nombre_usuario_origen, nombre_usuario2: nombre_usuario_destino}));
+        }
+        console.log(`Solicitud de amistad rechazada entre ${nombre_usuario_origen} y ${nombre_usuario_destino}`);
+      })
+
+      socket.on('disconnect', () => {
+        console.log(`Usuario ${nombre_usuario_conectado} desconectado del namespace de Monster Chess`);
+      });
+    });
+
+    async function obtenerIdUsuario(nombre_usuario){
+      const resultado = await usuarioModel.selectIdUsuario(nombre_usuario, null);
+
+      if(resultado.rows.length > 0) return resultado.rows[0].id_usuario;
+
+      return null;
+    }
+
+    async function crearAmistad(id_usuario1, id_usuario2) {
+      const resultado1 = await amigosModel.insertAmigo(id_usuario1, id_usuario2);
+      const resultado2 = await amigosModel.insertAmigo(id_usuario2, id_usuario1);
+
+
+      return resultado1.rowsAffected > 0 && resultado2.rowsAffected > 0;
     }
   }

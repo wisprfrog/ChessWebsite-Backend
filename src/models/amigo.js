@@ -12,7 +12,6 @@ const amigosModel = {
 
   insertAmigo : async(id_usuario, id_amigo) => {
       try{
-        console.log("entra mi bro")
           const resultado = await turso.execute(
               `INSERT INTO amigo (id_usuario, id_amigo) VALUES ('${id_usuario}', '${id_amigo}')`
           );
