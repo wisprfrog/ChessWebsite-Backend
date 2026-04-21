@@ -56,7 +56,6 @@ export default function serverSocket(io) {
 
       if(!partida_actual) console.log(`No se encontró la partida para la sala ${sala}. Movimiento no procesado.`);
       else{
-        console.log(`Movimiento recibido en la sala ${sala}`);
 
         try{
           partida_actual.partida_chess_js?.move(estructura_movimiento);
@@ -76,9 +75,8 @@ export default function serverSocket(io) {
 
         const fenMovimiento = partida_actual.partida_chess_js?.fen();
         const historialMovimientos = partida_actual.getHistorial();
-        console.log("listado movimientos: ", historialMovimientos);
 
-        io.to(sala).emit('cargar_juego', ({fenPartida: fenMovimiento, nombre_usuario_blancas: partida_actual.getNombreUsuarioBlancas(), nombre_usuario_negras: partida_actual.getNombreUsuarioNegras(), historial_juego: historialMovimientos}));
+        juego.to(sala).emit('cargar_juego', ({fenPartida: fenMovimiento, nombre_usuario_blancas: partida_actual.getNombreUsuarioBlancas(), nombre_usuario_negras: partida_actual.getNombreUsuarioNegras(), historial_juego: historialMovimientos}));
         if(partida_actual.partidaTerminada().causa_fin_partida){
           const resultado_partida = partida_actual.partidaTerminada();
           juego.to(sala).emit('terminar_partida', resultado_partida);
@@ -128,7 +126,7 @@ export default function serverSocket(io) {
       const nombre_usuario_blancas = partidas_activas.get(sala)?.getNombreUsuarioBlancas();
       const nombre_usuario_negras = partidas_activas.get(sala)?.getNombreUsuarioNegras();
       const historialMovimientos = partidas_activas.get(sala)?.getHistorial();
-      io.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras, historial_juego: historialMovimientos}));
+      juego.to(sala).emit('cargar_juego', ({fenPartida, nombre_usuario_blancas, nombre_usuario_negras, historial_juego: historialMovimientos}));
     });
 
     socket.on('disconnect', () => {
@@ -239,15 +237,6 @@ export default function serverSocket(io) {
       //Fecha
       const fecha = new Date().toLocaleDateString();
       const causa_fin_partida = partida.partidaTerminada().causa_fin_partida;
-
-      console.log(`Intentando guardar partida de la sala ${salaId} en la base de datos con los siguientes datos:
-        id_usuario_blancas: ${id_usuario_blancas},
-        id_usuario_negras: ${id_usuario_negras},
-        movimientos: ${JSON.stringify(movimientos)},
-        id_ganador: ${id_ganador},
-        fecha: ${fecha},
-        causa_fin_partida: ${causa_fin_partida}
-      `);
       
       try{
         await partidaModel.insertPartida(
@@ -289,7 +278,6 @@ export default function serverSocket(io) {
     function buscarUsuarioEnPartida(nombre_usuario){
       let salaIdEncontrada = null;
 
-      console.log(`Buscando partidas para el usuario ${nombre_usuario}...`);
       partidas_activas.forEach((partida, salaId) => {
         const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
         const nombre_usuario_negras = partida.getNombreUsuarioNegras();
@@ -312,7 +300,6 @@ export default function serverSocket(io) {
 
     function buscarSocketSala(socket, nombre_usuario){
       const sala = buscarUsuarioEnPartida(nombre_usuario);
-      console.log(`Sala encontrada para el usuario ${nombre_usuario}: ${sala}`);
       if(sala !== null){
         console.log(`Usuario ${nombre_usuario} se encuentra en la sala ${sala}. Intentando reconexión...`);
       }
@@ -337,12 +324,8 @@ export default function serverSocket(io) {
 
     monster_chess.on('connection', (socket) => {
       const nombre_usuario_conectado = socket.handshake.auth?.nombre_usuario_actual;
-
-      //console.log(`Usuario ${nombre_usuario_conectado} se ha conectado al namespace de Monster Chess.`);
       
       socket.on('pedir_solicitudes_amistad', async ({nombre_usuario}) => {
-        //console.log(`Usuario ${nombre_usuario} ha solicitado sus solicitudes de amistad.`);
-
         const id_usuario = await obtenerIdUsuario(nombre_usuario);
         const resultado = await solicitud_amistadModel.selectSolicitudesRecibidas(id_usuario);
         
@@ -353,8 +336,6 @@ export default function serverSocket(io) {
       });
 
       socket.on('pedir_solicitudes_amistad_enviadas', async ({nombre_usuario}) => {
-        //console.log(`Usuario ${nombre_usuario} ha solicitado sus solicitudes de amistad.`);
-
         const id_usuario = await obtenerIdUsuario(nombre_usuario);
 
         const resultado = await solicitud_amistadModel.selectSolicitudesEnviadas(id_usuario);
@@ -410,7 +391,7 @@ export default function serverSocket(io) {
           console.log(`Solicitud de amistad enviada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
         }
         catch(error){
-          console.log(error);
+          console.error(error);
         }
       })
 
@@ -420,21 +401,19 @@ export default function serverSocket(io) {
 
         const resultado = await solicitud_amistadModel.deleteSolicitudAmistad(id_usuario_origen, id_usuario_destino);
 
-        console.log(`Solicitud de amistad cancelada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
         
         const solicitudesRecibidasDestino = await solicitud_amistadModel.selectSolicitudesRecibidas(id_usuario_destino);
         const solicitudesEnviadasOrigen = await solicitud_amistadModel.selectSolicitudesEnviadas(id_usuario_origen);
-
+        
         monster_chess.emit('cargar_solicitudes_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: solicitudesRecibidasDestino.rows ? Array.from(solicitudesRecibidasDestino.rows) : []}));
         monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: solicitudesEnviadasOrigen.rows ? Array.from(solicitudesEnviadasOrigen.rows) : []}));
+        console.log(`Solicitud de amistad cancelada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
       });
 
       socket.on('aceptar_solicitud_amistad', async ({nombre_usuario1, nombre_usuario2}) => {
           const id_usuario1 = await obtenerIdUsuario(nombre_usuario1);
           const id_usuario2 = await obtenerIdUsuario(nombre_usuario2);
 
-          console.log(`Aceptando solicitud de amistad entre ${nombre_usuario1} y ${nombre_usuario2}...`);
-          console.log(`ID usuario 1: ${id_usuario1}, ID usuario 2: ${id_usuario2}`);
           const resultado = await solicitud_amistadModel.deleteSolicitudAmistad(id_usuario2, id_usuario1);
 
           if(!id_usuario1 || !id_usuario2){
@@ -442,14 +421,12 @@ export default function serverSocket(io) {
             return;
           }
 
-          console.log(`Intentando crear amistad entre ${id_usuario1} y ${id_usuario2}...`);
           const amistadCreada = await crearAmistad(id_usuario1, id_usuario2);
 
           if(amistadCreada){
             console.log(`Amistad creada entre ${nombre_usuario1} y ${nombre_usuario2}`);
             socket.emit('solicitud_amistad_aceptada', ({nombre_usuario1, nombre_usuario2}));
           }
-          console.log(`Solicitud de amistad aceptada entre ${nombre_usuario1} y ${nombre_usuario2}`);
       })
       
       socket.on('rechazar_solicitud_amistad', async ({nombre_usuario1, nombre_usuario2}) => {
@@ -459,7 +436,6 @@ export default function serverSocket(io) {
         const resultado = await solicitud_amistadModel.deleteSolicitudAmistad(id_usuario2, id_usuario1);
 
         socket.emit('solicitud_amistad_rechazada', ({nombre_usuario1, nombre_usuario2}));
-        //console.log(`Solicitud de amistad rechazada entre ${nombre_usuario1} y ${nombre_usuario2}`);
       })
 
       //Manejar invitaciones a partidas entre amigos
@@ -568,7 +544,7 @@ export default function serverSocket(io) {
       });
 
       socket.on('disconnect', () => {
-        //console.log(`Usuario ${nombre_usuario_conectado} desconectado del namespace de Monster Chess`);
+        console.log(`Usuario ${nombre_usuario_conectado} desconectado del namespace de Monster Chess`);
       });
     });
 
