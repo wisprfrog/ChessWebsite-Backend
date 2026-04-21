@@ -17,7 +17,7 @@ const amigosModel = {
           );
           return resultado;
       }catch(error){
-        throw new Error('Error al insertar amigo: ' + error.message);
+        return new Error('Error al insertar amigo: ' + error.message);
       }
   },
 
@@ -30,7 +30,7 @@ const amigosModel = {
 
           return resultado;
       }catch(error){
-          throw new Error('Error al eliminar amigo: ' + error.message);
+          return new Error('Error al eliminar amigo: ' + error.message);
       } 
   }
 };

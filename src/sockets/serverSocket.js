@@ -3,6 +3,7 @@ import partidaModel from '../models/partida.js';
 import usuarioModel from '../models/usuario.js';
 import estadisticaModel from '../models/estadistica.js';
 import amigosModel from '../models/amigo.js';
+import solicitud_amistadModel from '../models/solicitud_amistad.js';
 
 export default function serverSocket(io) {
   const juego = io.of('/juego');
@@ -328,91 +329,102 @@ export default function serverSocket(io) {
 
     //socket para el sitio web
     const monster_chess = io.of('/monster_chess');
-    let solicitud_amistad = new Map();    
-    let solicitud_amistad_enviadas = new Map();
 
     monster_chess.on('connection', (socket) => {
       const nombre_usuario_conectado = socket.handshake.auth?.nombre_usuario_actual;
 
       console.log(`Usuario ${nombre_usuario_conectado} se ha conectado al namespace de Monster Chess.`);
       
-      socket.on('pedir_solicitudes_amistad', ({nombre_usuario}) => {
+      socket.on('pedir_solicitudes_amistad', async ({nombre_usuario}) => {
         console.log(`Usuario ${nombre_usuario} ha solicitado sus solicitudes de amistad.`);
+
+        const id_usuario = await obtenerIdUsuario(nombre_usuario);
+        const resultado = await solicitud_amistadModel.selectSolicitudesRecibidas(id_usuario);
+        
         socket.emit('cargar_solicitudes_amistad', ({
           nombre_usuario_destino: nombre_usuario,
-          solicitudes: solicitud_amistad.has(nombre_usuario) ? Array.from(solicitud_amistad.get(nombre_usuario)) : []
+          solicitudes: resultado.rows ? Array.from(resultado.rows.map((row) => row.nombre_usuario)) : []
         }));
       });
 
-      socket.on('pedir_solicitudes_amistad_enviadas', ({nombre_usuario}) => {
+      socket.on('pedir_solicitudes_amistad_enviadas', async ({nombre_usuario}) => {
         console.log(`Usuario ${nombre_usuario} ha solicitado sus solicitudes de amistad.`);
+
+        const id_usuario = await obtenerIdUsuario(nombre_usuario);
+
+        const resultado = await solicitud_amistadModel.selectSolicitudesEnviadas(id_usuario);
+
         socket.emit('cargar_solicitudes_amistad_enviadas', ({
           nombre_usuario_destino: nombre_usuario,
-          solicitudes: solicitud_amistad_enviadas.has(nombre_usuario) ? Array.from(solicitud_amistad_enviadas.get(nombre_usuario)) : []
+          solicitudes: resultado.rows ? Array.from(resultado.rows.map((row) => row.nombre_usuario)) : []
         }));
       });
 
-      socket.on('enviar_solicitud_amistad', ({nombre_usuario_destino, nombre_usuario_origen}) => {
-        //validar que no sean amigos ya
+      socket.on('enviar_solicitud_amistad', async ({nombre_usuario_origen, nombre_usuario_destino}) => {
+        const id_usuario_origen = await obtenerIdUsuario(nombre_usuario_origen);
+        const id_usuario_destino = await obtenerIdUsuario(nombre_usuario_destino);
         
-        if (!solicitud_amistad.has(nombre_usuario_destino)) {
-          solicitud_amistad.set(nombre_usuario_destino, new Set());
-        }
+        try{
+          const resultado = await solicitud_amistadModel.insertSolicitudAmistad(id_usuario_origen, id_usuario_destino);
+          
+          const solicitudesRecibidasDestino = await solicitud_amistadModel.selectSolicitudesRecibidas(id_usuario_destino);
+          const solicitudesEnviadasOrigen = await solicitud_amistadModel.selectSolicitudesEnviadas(id_usuario_origen);
 
-        if(!solicitud_amistad_enviadas.has(nombre_usuario_origen)){
-          solicitud_amistad_enviadas.set(nombre_usuario_origen, new Set());
+          monster_chess.emit('nueva_solicitud_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: solicitudesRecibidasDestino.rows ? Array.from(solicitudesRecibidasDestino.rows.map((row) => row.nombre_usuario)) : []}));
+          monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: solicitudesEnviadasOrigen.rows ? Array.from(solicitudesEnviadasOrigen.rows.map((row) => row.nombre_usuario)) : []}));
+          console.log(`Solicitud de amistad enviada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
         }
-        
-        solicitud_amistad.get(nombre_usuario_destino).add(nombre_usuario_origen);
-        solicitud_amistad_enviadas.get(nombre_usuario_origen).add(nombre_usuario_destino);
-
-        monster_chess.emit('nueva_solicitud_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: Array.from(solicitud_amistad.get(nombre_usuario_destino))}));
-        monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: Array.from(solicitud_amistad_enviadas.get(nombre_usuario_origen))}));
-        console.log(`Solicitud de amistad enviada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
+        catch(error){
+          console.log(error);
+        }
       })
 
-      socket.on('cancelar_solicitud_amistad', ({nombre_usuario_origen, nombre_usuario_destino}) => {
-        solicitud_amistad.get(nombre_usuario_destino)?.delete(nombre_usuario_origen);
-        solicitud_amistad_enviadas.get(nombre_usuario_origen)?.delete(nombre_usuario_destino);
+      socket.on('cancelar_solicitud_amistad', async ({nombre_usuario_origen, nombre_usuario_destino}) => {
+        const id_usuario_origen = await obtenerIdUsuario(nombre_usuario_origen);
+        const id_usuario_destino = await obtenerIdUsuario(nombre_usuario_destino);
+
+        const resultado = await solicitud_amistadModel.deleteSolicitudAmistad(id_usuario_origen, id_usuario_destino);
+
         console.log(`Solicitud de amistad cancelada de ${nombre_usuario_origen} a ${nombre_usuario_destino}`);
         
-        monster_chess.emit('cargar_solicitudes_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: Array.from(solicitud_amistad.get(nombre_usuario_destino) || [])}));
-        monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: Array.from(solicitud_amistad_enviadas.get(nombre_usuario_origen) || [])}));
+        const solicitudesRecibidasDestino = await solicitud_amistadModel.selectSolicitudesRecibidas(id_usuario_destino);
+        const solicitudesEnviadasOrigen = await solicitud_amistadModel.selectSolicitudesEnviadas(id_usuario_origen);
+
+        monster_chess.emit('cargar_solicitudes_amistad', ({nombre_usuario_destino: nombre_usuario_destino, solicitudes: solicitudesRecibidasDestino.rows ? Array.from(solicitudesRecibidasDestino.rows) : []}));
+        monster_chess.emit('cargar_solicitudes_amistad_enviadas', ({nombre_usuario_destino: nombre_usuario_origen, solicitudes: solicitudesEnviadasOrigen.rows ? Array.from(solicitudesEnviadasOrigen.rows) : []}));
       });
 
       socket.on('aceptar_solicitud_amistad', async ({nombre_usuario1, nombre_usuario2}) => {
-        if (solicitud_amistad.has(nombre_usuario1)) {
-          solicitud_amistad.get(nombre_usuario1).delete(nombre_usuario2);
+          const id_usuario1 = await obtenerIdUsuario(nombre_usuario1);
+          const id_usuario2 = await obtenerIdUsuario(nombre_usuario2);
 
-          solicitud_amistad_enviadas.get(nombre_usuario2)?.delete(nombre_usuario1);
+          console.log(`Aceptando solicitud de amistad entre ${nombre_usuario1} y ${nombre_usuario2}...`);
+          console.log(`ID usuario 1: ${id_usuario1}, ID usuario 2: ${id_usuario2}`);
+          const resultado = await solicitud_amistadModel.deleteSolicitudAmistad(id_usuario2, id_usuario1);
 
-          const id_origen = await obtenerIdUsuario(nombre_usuario1);
-          const id_destino = await obtenerIdUsuario(nombre_usuario2);
-
-          if(!id_origen || !id_destino){
+          if(!id_usuario1 || !id_usuario2){
             console.error(`Error al obtener IDs de usuarios para ${nombre_usuario1} y ${nombre_usuario2}. No se pudo crear la amistad.`);
             return;
           }
 
-          console.log(`Intentando crear amistad entre ${id_origen} y ${id_destino}...`);
-          const amistadCreada = await crearAmistad(id_origen, id_destino);
+          console.log(`Intentando crear amistad entre ${id_usuario1} y ${id_usuario2}...`);
+          const amistadCreada = await crearAmistad(id_usuario1, id_usuario2);
 
           if(amistadCreada){
             console.log(`Amistad creada entre ${nombre_usuario1} y ${nombre_usuario2}`);
             socket.emit('solicitud_amistad_aceptada', ({nombre_usuario1, nombre_usuario2}));
           }
           console.log(`Solicitud de amistad aceptada entre ${nombre_usuario1} y ${nombre_usuario2}`);
-        }
       })
       
-      socket.on('rechazar_solicitud_amistad', ({nombre_usuario_origen, nombre_usuario_destino}) => {
-        if (solicitud_amistad.has(nombre_usuario_origen)) {
-          solicitud_amistad.get(nombre_usuario_origen)?.delete(nombre_usuario_destino);
-          solicitud_amistad_enviadas.get(nombre_usuario_destino)?.delete(nombre_usuario_origen);
+      socket.on('rechazar_solicitud_amistad', async ({nombre_usuario1, nombre_usuario2}) => {
+        const id_usuario1 = await obtenerIdUsuario(nombre_usuario1);
+        const id_usuario2 = await obtenerIdUsuario(nombre_usuario2);
 
-          socket.emit('solicitud_amistad_rechazada', ({nombre_usuario1: nombre_usuario_origen, nombre_usuario2: nombre_usuario_destino}));
-        }
-        console.log(`Solicitud de amistad rechazada entre ${nombre_usuario_origen} y ${nombre_usuario_destino}`);
+        const resultado = await solicitud_amistadModel.deleteSolicitudAmistad(id_usuario2, id_usuario1);
+
+        socket.emit('solicitud_amistad_rechazada', ({nombre_usuario1, nombre_usuario2}));
+        console.log(`Solicitud de amistad rechazada entre ${nombre_usuario1} y ${nombre_usuario2}`);
       })
 
       socket.on('disconnect', () => {
