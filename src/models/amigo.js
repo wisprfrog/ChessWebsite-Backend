@@ -21,6 +21,17 @@ const amigosModel = {
       }
   },
 
+    sonAmigos : async(id_usuario1, id_usuario2) => {
+      const resultado = await turso.execute(
+        `SELECT 1 FROM amigo
+         WHERE (id_usuario = '${id_usuario1}' AND id_amigo = '${id_usuario2}')
+          OR (id_usuario = '${id_usuario2}' AND id_amigo = '${id_usuario1}')
+         LIMIT 1`
+      );
+
+      return resultado.rows.length > 0;
+    },
+
   deleteAmigo : async(id_usuario, id_amigo) => {
       try{
           const resultado = await turso.execute(
