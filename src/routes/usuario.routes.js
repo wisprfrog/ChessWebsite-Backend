@@ -2,9 +2,9 @@ import { Router } from 'express';
 import { generarToken } from '../controllers/token.controller.js';
 
 import { getDatosUsuario, getNombreUsuarios, getIdUsuarios, getNombreUsuarioById } from '../controllers/usuario.controller.js';
-import { getIdUsuario, getCorreoUsuario, postUsuario } from '../controllers/usuario.controller.js';
+import { getIdUsuario, getCorreoUsuario, postUsuario, putFotoPerfil } from '../controllers/usuario.controller.js';
 import { putNombreUsuario, putContraseniaUsuario } from '../controllers/usuario.controller.js';
-import { deleteUsuario, aceptarLogin } from '../controllers/usuario.controller.js';
+import { deleteUsuario, aceptarLogin, getFotoPerfil } from '../controllers/usuario.controller.js';
 
 import verificarToken from '../middlewares/verificarToken.js';
 import agregarInfoLogin from '../middlewares/agregarInfoLogin.js';
@@ -25,6 +25,8 @@ usuarioRouter.post('/id_usuario/nombre_usuario', getNombreUsuarioById);
 usuarioRouter.post('/login/token', agregarInfoLogin, validarContrasenia, generarToken); //genera token
 usuarioRouter.post('/login', verificarToken, aceptarLogin); //verifica credenciales sin generar token
 usuarioRouter.post('/', postUsuario);
+usuarioRouter.post('/nombre_usuario/foto_perfil', getFotoPerfil);
+usuarioRouter.put('/id_usuario/foto_perfil', putFotoPerfil);
 
 // Ruta PRIVADA para cambiar información
 usuarioRouter.put('/id_usuario/nombre_usuario', verificarToken, putNombreUsuario);

@@ -121,10 +121,18 @@ const usuarioModel = {
     }
   },
 
-  insertUsuario: async (nombre_usuario, correo, contrasenia) => {
-    const resultado = await turso.execute(
-      `INSERT INTO usuario (nombre_usuario, correo, contrasenia) VALUES ('${nombre_usuario}', '${correo}', '${contrasenia}') RETURNING id_usuario`
-    );
+  insertUsuario: async (nombre_usuario, correo, contrasenia, url_foto) => {
+    const resultado = await turso.execute({
+      sql: `INSERT INTO usuario (nombre_usuario, correo, contrasenia, url_foto) 
+            VALUES (?, ?, ?, ?) 
+            RETURNING id_usuario`,
+      args: [
+        nombre_usuario,
+        correo,
+        contrasenia,
+        url_foto ?? null
+      ],
+    });
 
     return resultado;
   },
@@ -167,6 +175,26 @@ const usuarioModel = {
 
       return resultado;
     }
+  },
+
+  selectFotoPerfil: async (nombre_usuario) => {
+    const resultado = await turso.execute(
+      `SELECT url_foto FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
+    );
+
+    return resultado;
+  },
+
+  updateFotoPerfil: async (id_usuario, url_foto_nueva) => {
+    const resultado = await turso.execute({
+      sql: `UPDATE usuario SET url_foto = ? WHERE id_usuario = ?`,
+      args: [
+        url_foto_nueva,
+        id_usuario
+      ]
+    });
+
+    return resultado;
   }
 };
 
