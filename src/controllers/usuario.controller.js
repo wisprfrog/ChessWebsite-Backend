@@ -83,14 +83,14 @@ export const getCorreoUsuario = async (req, res) => {
 }
 
 export const postUsuario = async (req, res) => {
-  const { nombre_usuario, correo, contrasenia, url_foto } = req.body;
+  const { nombre_usuario, correo, contrasenia, url_foto, public_id } = req.body;
 
   if(!nombre_usuario || !correo || !contrasenia) return res.status(400).json({ message: 'Faltan datos requeridos' });
 
   try {
     const contraseniaEncriptada = await bcrypt.hash(contrasenia, 10);
 
-    const resultado = await usuarioModel.insertUsuario(nombre_usuario, correo, contraseniaEncriptada, url_foto);
+    const resultado = await usuarioModel.insertUsuario(nombre_usuario, correo, contraseniaEncriptada, url_foto, public_id);
     res.status(201).json({ message: 'Usuario registrado', informacion: resultado.rows });
   } catch (error) {
     res.status(500).json({ message: 'Error interno del servidor', error });
@@ -123,10 +123,10 @@ export const putNombreUsuario = async (req, res) => {
 
   try {
     const resultado = await usuarioModel.updateNombreUsuario(nombre_usuario, nuevo_nombre_usuario);
-    res.status(200).json({ message: 'Nombre de usuario actualizado', informacion: resultado.rows });
+    return res.status(200).json({ message: 'Nombre de usuario actualizado', informacion: resultado.rows });
   }
   catch(error){
-    res.status(500).json({ message: 'Error interno del servidor', error });
+    return res.status(500).json({ message: 'Error interno del servidor', error });
   }
 }
 
@@ -162,9 +162,9 @@ export const putContraseniaUsuario = async (req, res) => {
     const contraseniaEncriptada = await bcrypt.hash(nueva_contrasenia, 10);
     const resultado = await usuarioModel.updateContraseniaUsuario(correo, contraseniaEncriptada);
 
-    res.status(200).json({ message: 'Contraseña actualizada', informacion: resultado.rows });
+    return res.status(200).json({ message: 'Contraseña actualizada', informacion: resultado.rows });
   } catch (error) {
-    res.status(500).json({ message: 'Error interno del servidor', error });
+    return res.status(500).json({ message: 'Error interno del servidor', error });
   }
 }
 
@@ -219,10 +219,10 @@ export const deleteUsuario = async (req, res) => {
     }
     
     const resultado = await usuarioModel.deleteUsuarioSQL(id_usuario, nombre_usuario, correo);
-    res.status(200).json({ message: 'Usuario eliminado', informacion: resultado.rows });
+    return res.status(200).json({ message: 'Usuario eliminado', informacion: resultado.rows });
   }
   catch(error){
-    res.status(500).json({ message: 'Error interno del servidor', error });
+    return res.status(500).json({ message: 'Error interno del servidor', error });
   }
 }
 
@@ -230,23 +230,23 @@ export const getFotoPerfil = async (req, res) => {
   const { nombre_usuario } = req.body;
 
   if(!nombre_usuario) return res.status(400).json({ message: 'Faltan datos requeridos' });
-
+  
   try {
     const resultado = await usuarioModel.selectFotoPerfil(nombre_usuario);
-    res.status(200).json({ message: 'Foto de perfil del usuario:', url_foto: resultado.rows[0].url_foto });
+    return res.status(200).json({ message: 'Foto de perfil del usuario:', url_foto: resultado.rows[0].url_foto });
   }
   catch(error){
-    res.status(500).json({ message: 'Error interno del servidor', error });
+    return res.status(500).json({ message: 'Error interno del servidor', error });
   }
 }
 
 export const putFotoPerfil = async (req, res) => {
-  const { id_usuario, url_foto_nueva } = req.body;
+  const { id_usuario, url_foto_nueva, public_id_foto_nueva } = req.body;
 
   if(!id_usuario) return res.status(400).json({ message: 'Faltan datos requeridos' });
 
   try {
-    const resultado = await usuarioModel.updateFotoPerfil(id_usuario, url_foto_nueva);
+    const resultado = await usuarioModel.updateFotoPerfil(id_usuario, url_foto_nueva, public_id_foto_nueva);
     return res.status(200).json({ message: 'Foto de perfil actualizada', informacion: resultado.rows });
   }
   catch(error){

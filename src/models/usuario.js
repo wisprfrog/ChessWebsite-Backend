@@ -1,4 +1,11 @@
 import turso from '../config/db.js';
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const usuarioModel = {
   selectDatosUsuario: async (nombre_usuario, correo) => {
@@ -121,16 +128,17 @@ const usuarioModel = {
     }
   },
 
-  insertUsuario: async (nombre_usuario, correo, contrasenia, url_foto) => {
+  insertUsuario: async (nombre_usuario, correo, contrasenia, url_foto, public_id) => {
     const resultado = await turso.execute({
-      sql: `INSERT INTO usuario (nombre_usuario, correo, contrasenia, url_foto) 
-            VALUES (?, ?, ?, ?) 
+      sql: `INSERT INTO usuario (nombre_usuario, correo, contrasenia, url_foto, public_id_foto) 
+            VALUES (?, ?, ?, ?, ?) 
             RETURNING id_usuario`,
       args: [
         nombre_usuario,
         correo,
         contrasenia,
-        url_foto ?? null
+        url_foto,
+        public_id
       ],
     });
 
@@ -178,23 +186,43 @@ const usuarioModel = {
   },
 
   selectFotoPerfil: async (nombre_usuario) => {
-    const resultado = await turso.execute(
-      `SELECT url_foto FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
-    );
-
-    return resultado;
+    try{
+      const resultado = await turso.execute(
+        `SELECT url_foto FROM usuario WHERE nombre_usuario = '${nombre_usuario}'`
+      );
+      return resultado;
+    }
+    catch(error){
+      return new Error('Error al obtener la foto de perfil: ' + error.message);
+    }
   },
 
-  updateFotoPerfil: async (id_usuario, url_foto_nueva) => {
-    const resultado = await turso.execute({
-      sql: `UPDATE usuario SET url_foto = ? WHERE id_usuario = ?`,
-      args: [
-        url_foto_nueva,
-        id_usuario
-      ]
-    });
+  updateFotoPerfil: async (id_usuario, url_foto_nueva, public_id_foto_nueva) => {
+    try{
+      const resultado1 = await turso.execute(
+        `SELECT public_id_foto FROM usuario WHERE id_usuario = '${id_usuario}'`
+      );
 
-    return resultado;
+      const public_id_foto_actual = resultado1.rows[0].public_id_foto;
+
+      const resultado = await turso.execute({
+        sql: `UPDATE usuario SET url_foto = ?, public_id_foto = ? WHERE id_usuario = ?`,
+        args: [
+          url_foto_nueva,
+          public_id_foto_nueva,
+          id_usuario
+        ]
+      });
+
+      if(resultado && public_id_foto_actual){
+        const resultadoCloud = await cloudinary.uploader.destroy(public_id_foto_actual);
+      }
+
+      return resultado;
+    } 
+    catch(error){
+      return new Error('Error al actualizar la foto de perfil: ' + error.message);
+    }
   }
 };
 
