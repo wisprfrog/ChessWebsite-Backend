@@ -223,7 +223,17 @@ const usuarioModel = {
     catch(error){
       return new Error('Error al actualizar la foto de perfil: ' + error.message);
     }
-  }
+  },
+
+  buscarUsuariosPorCoincidencia: async (texto) => {
+    const busqueda = `%${texto}%`;
+    const resultado = await turso.execute({
+      sql: `SELECT nombre_usuario FROM usuario WHERE nombre_usuario LIKE ? LIMIT 8`,
+      args: [busqueda],
+    });
+
+    return resultado;
+  },
 };
 
 export default usuarioModel;

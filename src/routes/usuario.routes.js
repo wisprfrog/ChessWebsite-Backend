@@ -11,6 +11,7 @@ import agregarInfoLogin from '../middlewares/agregarInfoLogin.js';
 import validarContrasenia from '../middlewares/validarContrasenia.js';
 
 import { getHistorialPorNombre } from '../controllers/partida.controller.js'; 
+import {getBusquedaUsuarios} from '../controllers/usuario.controller.js';
 
 const usuarioRouter = Router();
 
@@ -34,5 +35,7 @@ usuarioRouter.put('/id_usuario/contrasenia', verificarToken, putContraseniaUsuar
 
 // Ruta PRIVADA para eliminar usuario
 usuarioRouter.delete('/id_usuario', verificarToken, deleteUsuario);
+usuarioRouter.get('/busqueda', getBusquedaUsuarios);
+
 
 export default usuarioRouter;

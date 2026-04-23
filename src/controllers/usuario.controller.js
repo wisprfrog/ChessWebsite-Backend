@@ -252,7 +252,23 @@ export const putFotoPerfil = async (req, res) => {
   catch(error){
     return res.status(500).json({ message: 'Error interno del servidor', error });
   }
+
 }
+
+  export const getBusquedaUsuarios = async (req, res) => {
+    const { nombre_usuario } = req.query;
+    if (!nombre_usuario || !nombre_usuario.trim()) {
+      return res.status(400).json({ message: 'Faltan datos requeridos' });
+    }
+
+    try {
+      const resultado = await usuarioModel.buscarUsuariosPorCoincidencia(nombre_usuario.trim());
+      res.status(200).json({ message: 'Resultados de búsqueda:', usuarios: resultado.rows });
+    }
+    catch(error){
+      res.status(500).json({ message: 'Error interno del servidor', error });
+    }
+  }
 
 export const aceptarLogin = async (req, res) => {
   res.status(200).json({ message: 'Inicio de sesión exitoso' });
