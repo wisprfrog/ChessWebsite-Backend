@@ -15,8 +15,8 @@ app.use(cors({
     cors: {
         origin: [
         // 'http://192.168.0.2:3000',
-        'http://localhost:3000',
-        // 'https://monsterchessofclansfrontend.vercel.app'
+        // 'http://localhost:3000',
+        'https://monsterchessofclansfrontend.vercel.app'
         ],
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         credentials: true // Permitir el envío de cookies para la autenticación si es necesario 
