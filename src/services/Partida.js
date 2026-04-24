@@ -6,8 +6,8 @@ export default class Partida {
     this.tiempo_restante_blancas = 10 * 60000;
     this.tiempo_restante_negras = 10 * 60000;
 
-    this.id_usuario_blancas = null;
-    this.id_usuario_negras = null;
+    this.nombre_usuario_blancas = null;
+    this.nombre_usuario_negras = null;
 
     this.tiempo_refer_blancas = null;
     this.tiempo_refer_negras = null;
@@ -39,12 +39,12 @@ export default class Partida {
     return this.nuevo_tiempo_negras;
   }
 
-  getIdUsuarioBlancas(){
-    return this.id_usuario_blancas;
+  getNombreUsuarioBlancas(){
+    return this.nombre_usuario_blancas;
   }
 
-  getIdUsuarioNegras(){
-    return this.id_usuario_negras;
+  getNombreUsuarioNegras(){
+    return this.nombre_usuario_negras;
   }
 
   getTiempoReconexionBlancas(){
@@ -63,12 +63,12 @@ export default class Partida {
     this.tiempo_reconexion_negras = tiempo;
   }
 
-  setIdUsuarioBlancas(id_usuario){
-    this.id_usuario_blancas = id_usuario;
+  setNombreUsuarioBlancas(nombre_usuario){
+    this.nombre_usuario_blancas = nombre_usuario;
   }
 
-  setIdUsuarioNegras(id_usuario){
-    this.id_usuario_negras = id_usuario;
+  setNombreUsuarioNegras(nombre_usuario){
+    this.nombre_usuario_negras = nombre_usuario;
   }
 
   actualizarTiempoRestanteBlancas(){
@@ -118,15 +118,15 @@ export default class Partida {
       if(this.partida_chess_js.isThreefoldRepetition()) causa_fin_partida = "Repetición de posición";
       if(this.partida_chess_js.isInsufficientMaterial()) causa_fin_partida = "Material insuficiente";
 
-      if(causa_fin_partida !== "Jaque Mate") ganador = "Empate";
-      else ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
+      if(causa_fin_partida !== "Jaque mate") ganador = null;
+      else ganador = this.getTurno() == 'w' ? this.nombre_usuario_negras : this.nombre_usuario_blancas;
     }
     else if(this.getTiempoNuevoBlancas() <= 0 || this.getTiempoNuevoNegras() <= 0){
       causa_fin_partida = "Tiempo agotado";
-      ganador = this.getTurno() == 'w' ? 'Negras' : 'Blancas';
+      ganador = this.getTurno() == 'w' ? this.nombre_usuario_negras : this.nombre_usuario_blancas;
     }else if(this.getTiempoReconexionBlancas() <= 0 || this.getTiempoReconexionNegras() <= 0){
       causa_fin_partida = "Desconexion";
-      ganador = 'Empate';
+      ganador = this.getTiempoReconexionBlancas() <= 0 ? this.getNombreUsuarioNegras() : this.getNombreUsuarioBlancas();
     }
 
     return { causa_fin_partida, ganador };
