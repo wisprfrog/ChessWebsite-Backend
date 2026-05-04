@@ -71,9 +71,10 @@ export const getRepeticionPartida = async (req, res) => {
     
     try {
         const movimientos = await partidaModel.obtenerMovimientosPorId(id_partida);
+        if(!movimientos||movimientos.length === 0||movimientos.rows && movimientos.rows.length === 0) return res.status(404).json({ message: 'Partida no encontrada' });
         return res.status(200).json({ message: 'Movimientos encontrados', movimientos });
     } catch (error) {
-        return res.status(404).json({ message: 'Partida no encontrada' });
+        return res.status(500).json({ message: 'Error interno del servidor', error });
     }
 };
 

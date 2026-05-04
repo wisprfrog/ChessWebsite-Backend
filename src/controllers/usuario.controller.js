@@ -15,6 +15,7 @@ export const getDatosUsuario = async (req, res) => {
 
  try{
     const resultado = await usuarioModel.selectDatosUsuario(nombre_usuario, correo);
+    if(resultado.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
     res.status(200).json({ message: 'Informacion usuario', informacion: resultado.rows });
   }
   catch(error){
@@ -233,6 +234,7 @@ export const getFotoPerfil = async (req, res) => {
   
   try {
     const resultado = await usuarioModel.selectFotoPerfil(nombre_usuario);
+    if(resultado.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
     return res.status(200).json({ message: 'Foto de perfil del usuario:', url_foto: resultado.rows[0].url_foto });
   }
   catch(error){
