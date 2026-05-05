@@ -8,9 +8,9 @@ import solicitud_amistadModel from '../models/solicitud_amistad.js';
 export default function serverSocket(io) {
   const juego = io.of('/juego');
 
-  const partidas_activas = new Map();
-  const usuarios_desconectados = new Map(); // Map<salaId, Set<nombre_usuario>>
-  const partidas_finalizando = new Set();
+  let partidas_activas = new Map();
+  let usuarios_desconectados = new Map(); // Map<salaId, Set<nombre_usuario>>
+  let partidas_finalizando = new Set();
   let cola = new Array();
   let jugadores_en_cola = new Set();
   var sala = 0;
@@ -19,12 +19,11 @@ export default function serverSocket(io) {
     const nombre_usuario_conectado = socket.handshake.auth?.nombre_usuario_actual;
     
     if(!nombre_usuario_conectado){
-      console.log('Conexion sin auth');
       socket.disconnect();
       return;
     }
 
-    console.log(`Usuario ${nombre_usuario_conectado} se ha conectado.`);
+    console.log(`Usuario ${nombre_usuario_conectado} conectado al namespace de Juego`);
     
     buscarSocketSala(socket, nombre_usuario_conectado); 
 
@@ -39,8 +38,9 @@ export default function serverSocket(io) {
         const nom_jugador2 = cola.shift();
         jugadores_en_cola.delete(nom_jugador1);
         jugadores_en_cola.delete(nom_jugador2);
-
+        
         console.log(`Partida encontrada entre ${nom_jugador1} y ${nom_jugador2} en la sala ${sala}.`);
+        
         juego.emit('partida_encontrada', {
           sala_asignada: sala.toString(),
           nombre_usuario1: nom_jugador1,
@@ -54,11 +54,12 @@ export default function serverSocket(io) {
     socket.on('movimiento', ({estructura_movimiento, sala}) => {
       const partida_actual = partidas_activas.get(sala);
 
-      if(!partida_actual) console.log(`No se encontró la partida para la sala ${sala}. Movimiento no procesado.`);
+      if(!partida_actual) console.log(`No se encontró la partida con la sala ${sala}. Movimiento no procesado.`);
       else{
 
         try{
           partida_actual.partida_chess_js?.move(estructura_movimiento);
+          console.log(`Movimiento procesado en la sala ${sala}:`, estructura_movimiento);
         } catch (error) {
           console.error('Movimiento invalido, error:', error);
           return;
@@ -131,6 +132,7 @@ export default function serverSocket(io) {
 
     socket.on('disconnect', () => {
       const nombre_usuario_desconectado = socket.handshake.auth?.nombre_usuario_actual;
+      console.log(`Usuario ${nombre_usuario_desconectado} desconectado del namespace de Juego`);
 
       partidas_activas.forEach((partida, salaId) => {
         const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
@@ -138,7 +140,7 @@ export default function serverSocket(io) {
         
         if(nombre_usuario_blancas === nombre_usuario_desconectado || nombre_usuario_negras === nombre_usuario_desconectado){
           agregarUsuarioDesconectado(salaId, nombre_usuario_desconectado);
-          console.log(`Usuario ${nombre_usuario_desconectado} se ha desconectado del socket de partida ID ${salaId}.`);
+          console.log(`Usuario ${nombre_usuario_desconectado} se ha desconectado del socket de la partida ${salaId}.`);
         }
       });
 
@@ -246,8 +248,6 @@ export default function serverSocket(io) {
           id_ganador,
           fecha, causa_fin_partida
         );
-
-        console.log('Partida guardada exitosamente en la base de datos: ');
       }
       catch(error){
         console.error('Error al guardar partida en la base de datos: ', error);
@@ -267,11 +267,12 @@ export default function serverSocket(io) {
           await estadisticaModel.updateEstadisticaTablas(id_usuario_blancas);
           await estadisticaModel.updateEstadisticaTablas(id_usuario_negras);
         }
-        console.log('Estadísticas actualizadas exitosamente en la base de datos');
       }catch(error){
         console.error('Error al actualizar estadísticas: ', error);
       }
-
+      
+      console.log(`Partida entre ${partida.getNombreUsuarioBlancas()} y ${partida.getNombreUsuarioNegras()} en la sala ${salaId} finalizada, causa: ${partida.partidaTerminada().causa_fin_partida}, ganador: ${partida.partidaTerminada().ganador}`);
+      console.log('Estadísticas actualizadas exitosamente en la base de datos');
       partidas_activas.delete(salaId);
     };
 
@@ -324,6 +325,7 @@ export default function serverSocket(io) {
 
     monster_chess.on('connection', (socket) => {
       const nombre_usuario_conectado = socket.handshake.auth?.nombre_usuario_actual;
+      console.log(`Usuario ${nombre_usuario_conectado} conectado al namespace de Monster Chess`);
       
       socket.on('pedir_solicitudes_amistad', async ({nombre_usuario}) => {
         const id_usuario = await obtenerIdUsuario(nombre_usuario);
@@ -474,6 +476,21 @@ export default function serverSocket(io) {
           return;
         }
 
+        partidas_activas.forEach((partida, salaId) => {
+          const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
+          const nombre_usuario_negras = partida.getNombreUsuarioNegras();
+
+          if((nombre_usuario_blancas == nombre_usuario_origen && nombre_usuario_blancas == nombre_usuario_destino) ||
+             (nombre_usuario_blancas == nombre_usuario_destino && nombre_usuario_negras == nombre_usuario_origen)         
+          ){
+            socket.emit('invitacion_partida_error', ({
+            nombre_usuario_origen,
+            nombre_usuario_destino,
+            mensaje: 'Ya están en partida juntos.'
+          }));
+          }
+        });
+
         invitacionesDestino.push({nombre_usuario_origen});
         //invitaciones sera una funcion que envie solo un arreglo de strings
         monster_chess.emit('nueva_invitacion_partida', ({
@@ -509,7 +526,28 @@ export default function serverSocket(io) {
           invitacionesDestino.filter((invitacion) => invitacion.nombre_usuario_origen !== nombre_usuario_origen)
         );
 
+        let partida_actual_origen, partida_actual_destino;
+        partidas_activas.forEach((partida, salaId) => {
+          const nombre_usuario_blancas = partida.getNombreUsuarioBlancas();
+          const nombre_usuario_negras = partida.getNombreUsuarioNegras();
+          
+          if(nombre_usuario_blancas == nombre_usuario_origen || nombre_usuario_blancas == nombre_usuario_destino){
+            partida.setTiempoReconexionBlancas(0);
+          }
+          if(nombre_usuario_negras == nombre_usuario_origen || nombre_usuario_negras == nombre_usuario_destino){
+            partida.setTiempoReconexionNegras(0);
+          }
+        });
+
+        
         const sala_asignada = sala.toString();
+        partidas_activas.set(sala_asignada, new Partida(sala_asignada));
+
+        partidas_activas.get(sala_asignada)?.setNombreUsuarioBlancas(sala_asignada & 1 ? nombre_usuario_origen : nombre_usuario_destino);
+        partidas_activas.get(sala_asignada)?.setNombreUsuarioNegras(sala_asignada & 1 ? nombre_usuario_destino : nombre_usuario_origen);
+        partidas_activas.get(sala_asignada)?.setTiempoReferBlancas();
+        partidas_activas.get(sala_asignada)?.setTiempoReferNegras();
+
         sala++;
 
         monster_chess.emit('cargar_invitaciones_partida', ({
@@ -519,8 +557,7 @@ export default function serverSocket(io) {
 
         monster_chess.emit('invitacion_partida_aceptada', ({
           nombre_usuario_origen,
-          nombre_usuario_destino,
-          sala_asignada
+          nombre_usuario_destino
         }));
       });
 
