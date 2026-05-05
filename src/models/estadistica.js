@@ -6,10 +6,7 @@ async function crearRegistroEstadistica(id_usuario) {
             `SELECT 1 FROM estadistica WHERE id_usuario = '${id_usuario}' LIMIT 1`
         );
 
-        if (existeRegistro.rows.length > 0) {
-            console.log('estadistica ya existe para el usuario:', id_usuario);
-            return;
-        }
+        if (existeRegistro.rows.length > 0) return;
 
         const resultado = await turso.execute(
             `INSERT INTO estadistica (id_usuario) VALUES ('${id_usuario}')`
@@ -47,7 +44,6 @@ const estadisticaModel = {
             const resultado = await turso.execute(
                 `UPDATE estadistica SET ganadas = ganadas + 1, partidas_jug = partidas_jug + 1 WHERE id_usuario = '${id_usuario}'`
             );
-            console.log('Estadistica actualizada para usuario:', id_usuario);
             return resultado;
         }catch(error){
             throw new Error('Error al actualizar estadistica: ' + error.message);  
@@ -61,7 +57,6 @@ const estadisticaModel = {
             const resultado = await turso.execute(
                 `UPDATE estadistica SET perdidas = perdidas + 1, partidas_jug = partidas_jug + 1 WHERE id_usuario = '${id_usuario}'`
             );
-            console.log('Estadistica actualizada para usuario:', id_usuario);
             return resultado;
         }catch(error){
             throw new Error('Error al actualizar estadistica: ' + error.message);  
@@ -75,7 +70,6 @@ const estadisticaModel = {
             const resultado = await turso.execute(
                 `UPDATE estadistica SET tablas = tablas + 1, partidas_jug = partidas_jug + 1 WHERE id_usuario = '${id_usuario}'`
             );
-            console.log('Estadistica actualizada para usuario:', id_usuario);
             return resultado;
         }catch(error){
             throw new Error('Error al actualizar estadistica: ' + error.message);  

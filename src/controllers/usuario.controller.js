@@ -15,6 +15,7 @@ export const getDatosUsuario = async (req, res) => {
 
  try{
     const resultado = await usuarioModel.selectDatosUsuario(nombre_usuario, correo);
+    if(resultado.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
     res.status(200).json({ message: 'Informacion usuario', informacion: resultado.rows });
   }
   catch(error){
@@ -123,7 +124,18 @@ export const putNombreUsuario = async (req, res) => {
 
   try {
     const resultado = await usuarioModel.updateNombreUsuario(nombre_usuario, nuevo_nombre_usuario);
-    return res.status(200).json({ message: 'Nombre de usuario actualizado', informacion: resultado.rows });
+    
+    if(resultado.rows){
+      const token_nuevo = jwt.sign({
+            id_usuario: decodedToken.id_usuario,
+            nombre_usuario: nuevo_nombre_usuario,
+            correo: decodedToken.correo},
+            process.env.JWT_SECRET,
+            { expiresIn: '1day' }
+          );
+  
+      return res.status(200).json({ message: 'Nombre de usuario actualizado', token: token_nuevo});
+    }
   }
   catch(error){
     return res.status(500).json({ message: 'Error interno del servidor', error });
@@ -233,6 +245,7 @@ export const getFotoPerfil = async (req, res) => {
   
   try {
     const resultado = await usuarioModel.selectFotoPerfil(nombre_usuario);
+    if(resultado.rows.length === 0) return res.status(404).json({ message: 'Usuario no encontrado' });
     return res.status(200).json({ message: 'Foto de perfil del usuario:', url_foto: resultado.rows[0].url_foto });
   }
   catch(error){

@@ -100,7 +100,7 @@ const usuarioModel = {
       }
     }
     catch (error) {
-      console.log('Error en selectCorreoUsuario:', error);
+      return new Error('Error al obtener el correo del usuario: ' + error.message);
     }
   },
 
